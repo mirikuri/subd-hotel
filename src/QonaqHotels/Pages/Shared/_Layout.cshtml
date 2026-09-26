@@ -1,51 +1,94 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@{
+    var user = Context.User;
+    var isAuth = user.Identity?.IsAuthenticated ?? false;
+    var userName = user.Identity?.Name ?? "";
+}
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - QonaqHotels</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <meta name="description" content="Отели Qonaq в Астане, Алматы и Шымкенте. Бронирование напрямую, бесплатная отмена, оплата при заезде." />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " — " : "")Qonaq Hotels — сеть отелей в Казахстане</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/QonaqHotels.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">QonaqHotels</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
-                        </li>
-                    </ul>
+    <div id="header-sentinel" style="position:absolute;top:80px;height:1px;pointer-events:none;"></div>
+    <header class="site-header" id="site-header">
+        <a href="/" class="logo">QONAQ <span style="font-size:.7em;opacity:.7;display:block;font-weight:400;letter-spacing:.15em">HOTELS</span></a>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="/#rooms">Номера</a></li>
+            <li><a href="/#hotels">Наши отели</a></li>
+            <li><a href="/#services">Услуги</a></li>
+            <li><a href="/#contacts">Контакты</a></li>
+        </ul>
+        <div class="header-right">
+            <a href="tel:+77000000001" style="font-size:.85rem;text-decoration:none;color:inherit">+7 700 000 00 01</a>
+            @if (isAuth) {
+                <div class="dropdown" style="position:relative">
+                    <button class="btn-login" id="user-dropdown-btn">
+                        <i class="bi bi-person-circle"></i> @userName
+                    </button>
+                    <div class="dropdown-menu" id="user-dropdown-menu" style="display:none;position:absolute;right:0;top:110%;background:#fff;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:180px;z-index:200">
+                        <a class="dropdown-item" href="/admin" style="display:block;padding:.5rem 1rem;color:var(--c-dark);text-decoration:none">Панель управления</a>
+                        <form method="post" asp-page="/Logout">
+                            <button type="submit" style="display:block;width:100%;padding:.5rem 1rem;background:none;border:none;text-align:left;cursor:pointer;color:var(--c-error)">Выйти</button>
+                        </form>
+                    </div>
+                </div>
+            } else {
+                <a href="/login" class="btn-login"><i class="bi bi-person"></i> Войти</a>
+            }
+            <button class="burger" id="burger" aria-label="Меню">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    @RenderBody()
+
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div class="footer-col">
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:1.1rem;color:#fff;margin-bottom:.5rem">QONAQ HOTELS</div>
+                <p style="font-size:.85rem">Сеть отелей в городах Казахстана</p>
+            </div>
+            <div class="footer-col">
+                <h4>Отель</h4>
+                <a href="/#rooms">Номера</a>
+                <a href="/#hotels">Наши отели</a>
+                <a href="/#services">Услуги</a>
+                <a href="/#contacts">Контакты</a>
+            </div>
+            <div class="footer-col">
+                <h4>Гостям</h4>
+                <a href="/loyalty">Программа лояльности</a>
+                <a href="#">Политика конфиденциальности</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <a href="tel:+77000000001">+7 700 000 00 01</a>
+                <a href="mailto:booking@qonaq-hotels.kz">booking@qonaq-hotels.kz</a>
+                <p style="font-size:.85rem;margin:.5rem 0">г. Астана, пр. Мангилик Ел, 55</p>
+                <div style="display:flex;gap:.75rem;margin-top:.5rem">
+                    <a href="#" aria-label="Instagram"><i class="bi bi-instagram" style="font-size:1.2rem"></i></a>
+                    <a href="#" aria-label="WhatsApp"><i class="bi bi-whatsapp" style="font-size:1.2rem"></i></a>
+                    <a href="#" aria-label="Telegram"><i class="bi bi-telegram" style="font-size:1.2rem"></i></a>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - QonaqHotels - <a asp-area="" asp-page="/Privacy">Privacy</a>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Qonaq Hotels. Учебный проект</span>
+            <a href="/login" style="color:rgba(255,255,255,.4)">Вход для сотрудников</a>
         </div>
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
