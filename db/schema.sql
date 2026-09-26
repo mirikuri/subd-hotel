@@ -4,17 +4,31 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 -- номера
 
--- отели сети название, город, адрес, звёздность, телефон
-CREATE TABLE hotels (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name     varchar(150) NOT NULL,
-    city     varchar(100) NOT NULL,
-    address  varchar(250) NOT NULL,
-    stars    smallint NOT NULL CHECK (stars BETWEEN 1 AND 5),
-    phone    varchar(20)
+-- справочник стран
+CREATE TABLE countries (
+    id   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name varchar(80) NOT NULL UNIQUE
 );
 
--- справочник типов номеров 
+-- справочник городов
+CREATE TABLE cities (
+    id         int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    country_id int NOT NULL REFERENCES countries(id) ON DELETE RESTRICT,
+    name       varchar(100) NOT NULL,
+    UNIQUE (country_id, name)
+);
+
+-- отели сети название, город, адрес, звёздность, телефон
+CREATE TABLE hotels (
+    id      int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name    varchar(150) NOT NULL,
+    city_id int NOT NULL REFERENCES cities(id) ON DELETE RESTRICT,
+    address varchar(250) NOT NULL,
+    stars   smallint NOT NULL CHECK (stars BETWEEN 1 AND 5),
+    phone   varchar(20)
+);
+
+-- справочник типов номеров
 CREATE TABLE room_types (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name        varchar(80) NOT NULL,
@@ -55,16 +69,16 @@ CREATE TABLE rates (
 
 
 
-
-
-
-
-
-
-
-
-
 -- Сотрудники
+
+-- позиции оклад и ставка (moved above employees to fix FK ordering bug)
+CREATE TABLE positions (
+    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name         varchar(80) NOT NULL,
+    base_salary  numeric(10,2),
+    hourly_rate  numeric(8,2)
+);
+
 CREATE TABLE employees (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     hotel_id         int NOT NULL REFERENCES hotels(id) ON DELETE RESTRICT,
@@ -75,22 +89,6 @@ CREATE TABLE employees (
     dismissal_date   date,
     CHECK (dismissal_date IS NULL OR dismissal_date >= hire_date)
 );
-
-
--- позиции оклад и ставка
-CREATE TABLE positions (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name         varchar(80) NOT NULL,
-    base_salary  numeric(10,2),
-    hourly_rate  numeric(8,2)
-);
-
-
-
-
-
-
-
 
 
 
@@ -106,7 +104,7 @@ CREATE TABLE guests (
     birth_date       date,
     phone            varchar(20),
     email            varchar(120),
-    country          varchar(60)
+    country_id       int REFERENCES countries(id) ON DELETE RESTRICT
 );
 
 -- Карты программы лояльности
@@ -168,14 +166,6 @@ CREATE TABLE stays (
 
 
 
-
-
-
-
-
-
-
-
 -- услуги
 
 CREATE TABLE service_categories (
@@ -207,17 +197,6 @@ CREATE TABLE service_orders (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 -- аренда
 
 -- типы помещ
@@ -239,7 +218,7 @@ CREATE TABLE commercial_units (
     UNIQUE (hotel_id, unit_number)
 );
 
--- Арендаторы 
+-- Арендаторы
 CREATE TABLE tenants (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     company_name   varchar(150) NOT NULL,
@@ -264,7 +243,7 @@ CREATE TABLE lease_contracts (
     CHECK (date_end > date_start)
 );
 
--- Какие помещения входят в договор и на какой срок 
+-- Какие помещения входят в договор и на какой срок
 CREATE TABLE contract_units (
     contract_id  int NOT NULL REFERENCES lease_contracts(id) ON DELETE CASCADE,
     unit_id      int NOT NULL REFERENCES commercial_units(id) ON DELETE RESTRICT,
@@ -296,7 +275,7 @@ CREATE TABLE meter_readings (
     UNIQUE (meter_id, reading_date)
 );
 
--- Тарифы на коммунальные услуги 
+-- Тарифы на коммунальные услуги
 CREATE TABLE utility_tariffs (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     meter_type      varchar(20) NOT NULL CHECK (meter_type IN ('электричество', 'вода', 'тепло')),
@@ -306,28 +285,9 @@ CREATE TABLE utility_tariffs (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 -- финансы
 
--- Счетаза проживание или за аренду 
+-- Счетаза проживание или за аренду
 CREATE TABLE invoices (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     invoice_number   varchar(30) NOT NULL UNIQUE,
@@ -403,17 +363,6 @@ CREATE TABLE payrolls (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 --доступы
 
 -- Учётки для входа в систему
@@ -424,8 +373,12 @@ CREATE TABLE users (
     password_hash   varchar(255) NOT NULL,
     role            varchar(30) NOT NULL
                     CHECK (role IN ('админ', 'ресепшен', 'бухгалтер', 'управляющий арендой')),
-    is_active       boolean NOT NULL DEFAULT true
+    is_active       boolean NOT NULL DEFAULT true,
+    failed_attempts int NOT NULL DEFAULT 0,
+    locked_until    timestamptz,
+    last_login_at   timestamptz
 );
+
 --логи
 CREATE TABLE audit_log (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -435,4 +388,3 @@ CREATE TABLE audit_log (
     record_id    int,
     changed_at   timestamp NOT NULL DEFAULT now()
 );
-
