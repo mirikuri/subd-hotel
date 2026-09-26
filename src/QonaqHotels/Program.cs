@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using QonaqHotels.Data;
+using QonaqHotels.Models;
 using QonaqHotels.Services;
 using System.Threading.RateLimiting;
 
@@ -18,6 +20,7 @@ builder.Services.AddDbContext<HotelDbContext>(options =>
 
 // Login service
 builder.Services.AddScoped<LoginService>();
+builder.Services.AddScoped<PasswordHasher<User>>();
 
 // Cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
