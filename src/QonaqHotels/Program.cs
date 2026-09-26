@@ -49,7 +49,11 @@ builder.Services.AddRateLimiter(o =>
 
 var app = builder.Build();
 
-// TODO Task 5: Seeder.SeedAsync called here
+using (var scope = app.Services.CreateScope()) {
+    var db     = scope.ServiceProvider.GetRequiredService<HotelDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await Seeder.SeedAsync(db, logger);
+}
 
 if (!app.Environment.IsDevelopment()) {
     app.UseExceptionHandler("/Error/500");
