@@ -212,6 +212,8 @@ img { max-width: 100%; height: auto; }
 .review-city   { color: #888; font-size: .85rem; margin-bottom: .5rem; }
 .review-text   { color: #555; font-size: .9rem; }
 
+.dropdown-menu.show { display: block !important; }
+
 /* ── Admin panel ─────────────────────────────────────────── */
 .admin-layout { display: flex; min-height: 100vh; }
 .admin-sidebar {
