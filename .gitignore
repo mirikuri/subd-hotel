@@ -1,0 +1,19 @@
+# .NET
+obj/
+bin/
+*.user
+.vs/
+
+# Secrets
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# dotnet tools
+.config/
+
+# NixOS
+result
+
+# SDD workspace (superpowers internal)
+.superpowers/
