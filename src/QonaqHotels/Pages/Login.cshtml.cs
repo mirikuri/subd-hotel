@@ -9,7 +9,6 @@ using System.Security.Claims;
 
 namespace QonaqHotels.Pages;
 
-[EnableRateLimiting("login")]
 public class LoginModel : PageModel
 {
     private readonly LoginService _loginService;
@@ -41,6 +40,7 @@ public class LoginModel : PageModel
         return Page();
     }
 
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         if (!ModelState.IsValid)
