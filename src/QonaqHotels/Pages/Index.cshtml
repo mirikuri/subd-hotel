@@ -1,10 +1,172 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = null;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@* Block 1: Hero *@
+<section class="hero" id="top">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+        <h1>Как дома — в любом городе Казахстана</h1>
+        <p>Отели Qonaq в Астане, Алматы и Шымкенте. Бронируйте напрямую — без комиссий и переплат.</p>
+    </div>
+    <div class="search-bar">
+        <form method="get" action="/search" id="search-form" style="display:flex;gap:.75rem;align-items:flex-end;width:100%">
+            <div class="search-field">
+                <label for="search-city">Город</label>
+                <select name="city" id="search-city">
+                    <option value="">Все города</option>
+                    @foreach (var city in Model.Cities) {
+                        <option value="@city.Id">@city.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="search-checkin">Заезд</label>
+                <input type="date" id="search-checkin" name="from" />
+            </div>
+            <div class="search-field">
+                <label for="search-checkout">Выезд</label>
+                <input type="date" id="search-checkout" name="to" />
+            </div>
+            <div class="search-field" style="max-width:100px">
+                <label for="search-guests">Гостей</label>
+                <input type="number" id="search-guests" name="guests" value="1" min="1" max="6" />
+            </div>
+            <button type="submit" class="btn-primary">Найти номер</button>
+        </form>
+    </div>
+</section>
+
+@* Block 2: Benefits *@
+<section class="benefits">
+    <div class="benefits-grid">
+        <div><div class="benefit-icon"><i class="bi bi-tag"></i></div><div class="benefit-title">Лучшая цена</div><div class="benefit-desc">Напрямую дешевле, чем на сайтах-агрегаторах</div></div>
+        <div><div class="benefit-icon"><i class="bi bi-x-circle"></i></div><div class="benefit-title">Бесплатная отмена</div><div class="benefit-desc">До 18:00 дня заезда без штрафа</div></div>
+        <div><div class="benefit-icon"><i class="bi bi-credit-card"></i></div><div class="benefit-title">Оплата при заезде</div><div class="benefit-desc">Ничего не нужно платить заранее</div></div>
+        <div><div class="benefit-icon"><i class="bi bi-gift"></i></div><div class="benefit-title">Бонусы за проживание</div><div class="benefit-desc">Копите баллы и тратьте в следующих поездках</div></div>
+    </div>
+</section>
+
+@* Block 3: About *@
+<section class="section" id="about">
+    <div class="section-inner about-strip">
+        <div>
+            <img src="/img/about.webp" alt="Стойка регистрации Qonaq Hotels" loading="lazy" style="border-radius:8px;width:100%;object-fit:cover;height:360px" onerror="this.src='/img/placeholder.webp'" />
+        </div>
+        <div>
+            <h2>Сеть отелей Qonaq</h2>
+            <p>Qonaq по-казахски — «гость». Вокруг этого слова мы и строим наши отели: встречаем тепло, селим быстро и помним, что вы любите.</p>
+            <p>В сети есть и уютные 3★, и деловые 5★. Все отели стоят рядом с бизнес-центрами, вокзалами и главными местами города. Заезд с 14:00, выезд до 12:00, стойка регистрации работает круглосуточно.</p>
+            <div class="about-counters">
+                <div><div class="counter-num">@Model.HotelCount</div><div class="counter-lbl">отелей в сети</div></div>
+                <div><div class="counter-num">@Model.RoomCount</div><div class="counter-lbl">номеров</div></div>
+                <div><div class="counter-num">@Model.CityCount</div><div class="counter-lbl">городов</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* Block 4: Room Types *@
+@if (Model.RoomTypes.Any()) {
+<section class="section" id="rooms" style="background:#fff">
+    <div class="section-inner">
+        <h2 class="section-title">Номера</h2>
+        <p class="section-sub">От компактного стандарта до семейного люкса</p>
+        <div class="card-grid cols-3">
+            @foreach (var rt in Model.RoomTypes) {
+                <div class="card">
+                    <img src="@Model.RoomImage(rt.Id)" alt="Номер @rt.Name" loading="lazy" />
+                    <div class="card-body">
+                        <h3>@rt.Name</h3>
+                        <p>Вместимость: до @rt.Capacity чел.</p>
+                        <p>@rt.Description</p>
+                        <a href="/rooms#type-@rt.Id" class="btn-primary">Подробнее</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+}
+
+@* Block 5: Hotels *@
+@if (Model.Hotels.Any()) {
+<section class="section" id="hotels">
+    <div class="section-inner">
+        <h2 class="section-title">Наши отели</h2>
+        <p class="section-sub">Выберите город — остальное мы возьмём на себя</p>
+        <div class="card-grid cols-3">
+            @foreach (var h in Model.Hotels) {
+                <div class="card">
+                    <img src="@Model.HotelImage(h.Id)" alt="@h.Name" loading="lazy" />
+                    <div class="card-body">
+                        <div class="stars">@string.Concat(Enumerable.Repeat("★", h.Stars))@string.Concat(Enumerable.Repeat("☆", 5 - h.Stars))</div>
+                        <h3>@h.Name</h3>
+                        <p><i class="bi bi-geo-alt"></i> @h.City.Name, @h.Address</p>
+                        @if (h.Phone != null) {
+                            <p><a href="tel:@h.Phone">@h.Phone</a></p>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+}
+
+@* Block 6: Services *@
+<section class="section" id="services" style="background:#fff">
+    <div class="section-inner">
+        <h2 class="section-title">Услуги</h2>
+        <div class="card-grid cols-4">
+            <div class="card"><img src="/img/service-restaurant.webp" alt="Ресторан Дастархан" loading="lazy" onerror="this.src='/img/placeholder.webp'" /><div class="card-body"><h3>Ресторан «Дастархан»</h3><p>Казахская и европейская кухня. Завтрак «шведский стол» с 7:00 до 10:30.</p></div></div>
+            <div class="card"><img src="/img/service-spa.webp" alt="Спа и фитнес" loading="lazy" onerror="this.src='/img/placeholder.webp'" /><div class="card-body"><h3>Спа и фитнес</h3><p>Бассейн, сауна и тренажёрный зал. Для гостей бесплатно с 7:00 до 22:00.</p></div></div>
+            <div class="card"><img src="/img/service-conference.webp" alt="Конференц-залы" loading="lazy" onerror="this.src='/img/placeholder.webp'" /><div class="card-body"><h3>Конференц-залы</h3><p>Залы на 20–150 человек с проектором и звуком. Кофе-брейк по запросу.</p></div></div>
+            <div class="card"><img src="/img/service-transfer.webp" alt="Трансфер" loading="lazy" onerror="this.src='/img/placeholder.webp'" /><div class="card-body"><h3>Трансфер</h3><p>Встретим в аэропорту или на вокзале и довезём до отеля.</p></div></div>
+        </div>
+    </div>
+</section>
+
+@* Block 7: Loyalty *@
+<section class="loyalty-banner">
+    <h2>Карта гостя Qonaq</h2>
+    <p>Получите карту при первом заселении и копите баллы за каждую ночь.</p>
+    <div class="loyalty-cards-row">
+        <div class="loyalty-card-item"><div class="level">Silver</div><div>С первого заселения</div><div style="font-size:.85rem;opacity:.8">3% от стоимости баллами</div></div>
+        <div class="loyalty-card-item"><div class="level">Gold</div><div>От 10 ночей</div><div style="font-size:.85rem;opacity:.8">5% баллами + поздний выезд до 14:00</div></div>
+        <div class="loyalty-card-item"><div class="level">Platinum</div><div>От 30 ночей</div><div style="font-size:.85rem;opacity:.8">10% баллами + повышение категории</div></div>
+    </div>
+    <a href="/loyalty" class="btn-primary">Подробнее</a>
+</section>
+
+@* Block 8: Reviews *@
+<section class="section">
+    <div class="section-inner">
+        <h2 class="section-title">Отзывы гостей</h2>
+        <div class="reviews-grid">
+            <div class="review-card"><div class="review-author">Айгерим</div><div class="review-city">Алматы</div><div class="stars">★★★★★</div><p class="review-text">Была в командировке три дня. Тихий номер, быстрый заезд, отличный завтрак.</p></div>
+            <div class="review-card"><div class="review-author">Даниэль</div><div class="review-city">Берлин</div><div class="stars">★★★★☆</div><p class="review-text">Удобно добираться до выставки, персонал говорит по-английски. У кровати не хватает розеток.</p></div>
+            <div class="review-card"><div class="review-author">Мадина</div><div class="review-city">Шымкент</div><div class="stars">★★★★★</div><p class="review-text">Отдыхали семьёй в семейном номере. Детям понравился бассейн, нам — тишина.</p></div>
+        </div>
+    </div>
+</section>
+
+@* Block 9: Contacts *@
+<section class="section" id="contacts" style="background:#fff">
+    <div class="section-inner">
+        <h2 class="section-title">Контакты</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
+            <div>
+                <p><strong>Отдел бронирования:</strong><br /><a href="tel:+77000000001">+7 700 000 00 01</a><br /><a href="mailto:booking@qonaq-hotels.kz">booking@qonaq-hotels.kz</a></p>
+                <p><strong>Отдел продаж:</strong><br /><a href="tel:+77000000009">+7 700 000 00 09</a><br /><a href="mailto:sales@qonaq-hotels.kz">sales@qonaq-hotels.kz</a></p>
+                <p><strong>Головной офис:</strong><br />г. Астана, пр. Мангилик Ел, 55</p>
+            </div>
+            <div>
+                <iframe src="https://2gis.kz/astana?m=71.430564%2C51.128422%2F14" width="100%" height="300" frameborder="0" allowfullscreen style="border-radius:8px"></iframe>
+                <p style="text-align:center;margin-top:.5rem"><a href="https://2gis.kz/astana" target="_blank" rel="noopener">Открыть в 2ГИС</a></p>
+            </div>
+        </div>
+    </div>
+</section>
