@@ -104,7 +104,14 @@ CREATE TABLE guests (
     birth_date       date,
     phone            varchar(20),
     email            varchar(120),
-    country_id       int REFERENCES countries(id) ON DELETE RESTRICT
+    country_id       int REFERENCES countries(id) ON DELETE RESTRICT,
+    login            varchar(50) UNIQUE,
+    password_hash    varchar(500),
+    is_active        boolean NOT NULL DEFAULT true,
+    failed_attempts  int NOT NULL DEFAULT 0,
+    locked_until     timestamptz,
+    last_login_at    timestamptz,
+    registered_at    timestamptz NOT NULL DEFAULT now()
 );
 
 -- Карты программы лояльности

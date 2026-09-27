@@ -191,6 +191,9 @@ public partial class HotelDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("guests_pkey");
 
             entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.FailedAttempts).HasDefaultValue(0);
+            entity.Property(e => e.RegisteredAt).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.Country).WithMany(p => p.Guests)
                 .OnDelete(DeleteBehavior.Restrict)

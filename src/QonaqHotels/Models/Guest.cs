@@ -8,6 +8,7 @@ namespace QonaqHotels.Models;
 
 [Table("guests")]
 [Index("DocumentNumber", Name = "guests_document_number_key", IsUnique = true)]
+[Index("Login", Name = "guests_login_key", IsUnique = true)]
 public partial class Guest
 {
     [Key]
@@ -35,6 +36,29 @@ public partial class Guest
 
     [Column("country_id")]
     public int? CountryId { get; set; }
+
+    [Column("login")]
+    [StringLength(50)]
+    public string? Login { get; set; }
+
+    [Column("password_hash")]
+    [StringLength(500)]
+    public string? PasswordHash { get; set; }
+
+    [Column("is_active")]
+    public bool IsActive { get; set; }
+
+    [Column("failed_attempts")]
+    public int FailedAttempts { get; set; }
+
+    [Column("locked_until")]
+    public DateTime? LockedUntil { get; set; }
+
+    [Column("last_login_at")]
+    public DateTime? LastLoginAt { get; set; }
+
+    [Column("registered_at")]
+    public DateTime RegisteredAt { get; set; }
 
     [InverseProperty("Guest")]
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();

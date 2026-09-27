@@ -18,9 +18,11 @@ builder.Services.AddRazorPages(options => {
 builder.Services.AddDbContext<HotelDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Login service
+// Login services
 builder.Services.AddScoped<LoginService>();
+builder.Services.AddScoped<GuestAuthService>();
 builder.Services.AddScoped<PasswordHasher<User>>();
+builder.Services.AddScoped<PasswordHasher<Guest>>();
 
 // Cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -278,9 +278,25 @@ img { max-width: 100%; height: auto; }
 .caps-warning { font-size: .78rem; color: var(--c-error); margin-top: .2rem; display: none; }
 .caps-warning.visible { display: block; }
 .alert-error { background: #fde8e8; color: var(--c-error); border: 1px solid #f5c6c6; border-radius: 4px; padding: .6rem .9rem; font-size: .9rem; margin-bottom: 1rem; }
+.alert-ok    { background: #e6f7ec; color: #1e6b3f; border: 1px solid #b6dfc4; border-radius: 4px; padding: .6rem .9rem; font-size: .9rem; margin-bottom: 1rem; }
 .login-hint { font-size: .8rem; color: #888; text-align: center; margin-top: .75rem; }
 .back-link { display: block; text-align: center; margin-top: 1rem; font-size: .85rem; color: #666; text-decoration: none; }
 .back-link:hover { color: var(--c-accent); }
+.switch-link { display: block; text-align: center; margin-top: .75rem; font-size: .85rem; color: var(--c-accent); text-decoration: none; font-weight: 500; }
+.switch-link:hover { text-decoration: underline; }
+.login-footer { border-top: 1px solid #eee; margin-top: 1.25rem; padding-top: .75rem; }
+
+/* Tabs on Register-Login page */
+.tab-switch { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid #eee; }
+.tab-btn {
+  flex: 1; background: none; border: none; padding: .6rem .5rem; cursor: pointer;
+  font: inherit; color: #888; border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.tab-btn:hover { color: var(--c-dark); }
+.tab-btn.active { color: var(--c-dark); border-bottom-color: var(--c-accent); font-weight: 500; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1199px) {
