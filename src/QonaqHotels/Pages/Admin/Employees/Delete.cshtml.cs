@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using QonaqHotels.Data;
 using QonaqHotels.Models;
 
@@ -22,10 +23,19 @@ public class DeleteModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
-        var emp = await _db.Employees.FindAsync(id);
+        var emp = await _db.Employees
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.Id == id);
         if (emp == null) return NotFound();
 
         emp.DismissalDate = DateOnly.FromDateTime(DateTime.Today);
+
+        if (emp.User != null)
+        {
+            emp.User.IsActive    = false;
+            emp.User.LockedUntil = DateTime.UtcNow.AddYears(100);
+        }
+
         await _db.SaveChangesAsync();
         return RedirectToPage("Index");
     }

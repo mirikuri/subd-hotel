@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -8,6 +10,7 @@ using QonaqHotels.Models;
 
 namespace QonaqHotels.Pages.Admin.Users;
 
+[Authorize(Policy = "RequireAdmin")]
 public class CreateModel : PageModel
 {
     private readonly HotelDbContext _db;
@@ -19,8 +22,8 @@ public class CreateModel : PageModel
     }
 
     [BindProperty] public int EmployeeId { get; set; }
-    [BindProperty] public string Login { get; set; } = "";
-    [BindProperty] public string Password { get; set; } = "";
+    [BindProperty, Required, StringLength(50, MinimumLength = 3)] public string Login { get; set; } = "";
+    [BindProperty, Required, MinLength(8)] public string Password { get; set; } = "";
     [BindProperty] public string Role { get; set; } = "ресепшен";
 
     public SelectList Employees { get; set; } = null!;

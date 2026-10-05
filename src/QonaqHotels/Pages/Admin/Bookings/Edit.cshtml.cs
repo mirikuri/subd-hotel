@@ -40,7 +40,18 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        if (CheckOutPlan <= CheckInPlan)
+            ModelState.AddModelError("CheckOutPlan", "Дата выезда должна быть позже даты заезда.");
+
+        if (Status == "отменена" && string.IsNullOrWhiteSpace(CancelReason))
+            ModelState.AddModelError("CancelReason", "Укажите причину отмены.");
+
+        if (!ModelState.IsValid)
+        {
+            var bv = await _db.Bookings.FindAsync(Id);
+            if (bv != null) { await _db.Entry(bv).Reference(x => x.Guest).LoadAsync(); await _db.Entry(bv).Reference(x => x.Hotel).LoadAsync(); GuestName = bv.Guest.FullName; HotelName = bv.Hotel.Name; }
+            return Page();
+        }
 
         var b = await _db.Bookings.FindAsync(Id);
         if (b == null) return NotFound();

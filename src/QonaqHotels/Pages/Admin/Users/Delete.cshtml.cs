@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,7 @@ using QonaqHotels.Models;
 
 namespace QonaqHotels.Pages.Admin.Users;
 
+[Authorize(Policy = "RequireAdmin")]
 public class DeleteModel : PageModel
 {
     private readonly HotelDbContext _db;

@@ -24,6 +24,9 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (CheckOutPlan <= CheckInPlan)
+            ModelState.AddModelError("CheckOutPlan", "Дата выезда должна быть позже даты заезда.");
+
         if (!ModelState.IsValid) { LoadLists(); return Page(); }
 
         _db.Bookings.Add(new Booking

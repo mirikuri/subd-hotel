@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using QonaqHotels.Data;
@@ -5,6 +6,7 @@ using QonaqHotels.Models;
 
 namespace QonaqHotels.Pages.Admin.Users;
 
+[Authorize(Policy = "RequireAdmin")]
 public class IndexModel : PageModel
 {
     private readonly HotelDbContext _db;

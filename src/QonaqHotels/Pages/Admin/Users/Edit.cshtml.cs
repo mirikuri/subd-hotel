@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -6,6 +7,7 @@ using QonaqHotels.Models;
 
 namespace QonaqHotels.Pages.Admin.Users;
 
+[Authorize(Policy = "RequireAdmin")]
 public class EditModel : PageModel
 {
     private readonly HotelDbContext _db;
@@ -41,7 +43,12 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        if (!ModelState.IsValid)
+        {
+            var u = await _db.Users.FindAsync(Id);
+            if (u != null) { await _db.Entry(u).Reference(x => x.Employee).LoadAsync(); EmployeeName = u.Employee.FullName; }
+            return Page();
+        }
 
         var user = await _db.Users.FindAsync(Id);
         if (user == null) return NotFound();
@@ -50,11 +57,17 @@ public class EditModel : PageModel
         user.Role     = Role;
         user.IsActive = IsActive;
 
+        if (IsActive && user.LockedUntil > DateTime.UtcNow)
+        {
+            user.LockedUntil    = null;
+            user.FailedAttempts = 0;
+        }
+
         if (!string.IsNullOrWhiteSpace(NewPassword))
         {
-            user.PasswordHash  = _hasher.HashPassword(user, NewPassword);
+            user.PasswordHash   = _hasher.HashPassword(user, NewPassword);
             user.FailedAttempts = 0;
-            user.LockedUntil   = null;
+            user.LockedUntil    = null;
         }
 
         await _db.SaveChangesAsync();
