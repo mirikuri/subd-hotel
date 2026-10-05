@@ -1,0 +1,46 @@
+@page
+@model IndexModel
+@{ ViewData["Title"] = "Сотрудники"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Сотрудники</h4>
+    <a asp-page="Create" class="btn btn-primary btn-sm">+ Добавить</a>
+</div>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light">
+        <tr>
+            <th>ФИО</th>
+            <th>Отель</th>
+            <th>Должность</th>
+            <th>Дата приёма</th>
+            <th>Статус</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var e in Model.Employees)
+        {
+            <tr>
+                <td>@e.FullName</td>
+                <td>@e.Hotel.Name</td>
+                <td>@e.Position.Name</td>
+                <td>@e.HireDate.ToString("dd.MM.yyyy")</td>
+                <td>
+                    @if (e.DismissalDate == null)
+                    {
+                        <span class="badge bg-success">Работает</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Уволен @e.DismissalDate.Value.ToString("dd.MM.yyyy")</span>
+                    }
+                </td>
+                <td>
+                    <a asp-page="Edit" asp-route-id="@e.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+                    <a asp-page="Delete" asp-route-id="@e.Id" class="btn btn-outline-danger btn-sm">Уволить</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

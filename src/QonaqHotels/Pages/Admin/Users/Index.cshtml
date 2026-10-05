@@ -1,0 +1,50 @@
+@page
+@model IndexModel
+@{ ViewData["Title"] = "Пользователи"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Пользователи</h4>
+    <a asp-page="Create" class="btn btn-primary btn-sm">+ Добавить</a>
+</div>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light">
+        <tr>
+            <th>Сотрудник</th>
+            <th>Логин</th>
+            <th>Роль</th>
+            <th>Последний вход</th>
+            <th>Статус</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model.Users)
+        {
+            <tr>
+                <td>@u.Employee.FullName</td>
+                <td>@u.Login</td>
+                <td>@u.Role</td>
+                <td>@(u.LastLoginAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                <td>
+                    @if (!u.IsActive)
+                    {
+                        <span class="badge bg-secondary">Отключён</span>
+                    }
+                    else if (u.LockedUntil > DateTime.UtcNow)
+                    {
+                        <span class="badge bg-warning text-dark">Заблокирован</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Активен</span>
+                    }
+                </td>
+                <td>
+                    <a asp-page="Edit" asp-route-id="@u.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+                    <a asp-page="Delete" asp-route-id="@u.Id" class="btn btn-outline-danger btn-sm">Отключить</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

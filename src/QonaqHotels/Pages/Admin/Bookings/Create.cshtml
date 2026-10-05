@@ -1,0 +1,42 @@
+@page
+@model CreateModel
+@{ ViewData["Title"] = "Добавить бронь"; }
+
+<h4>Добавить бронь</h4>
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="mb-3">
+        <label asp-for="GuestId" class="form-label">Гость</label>
+        <select asp-for="GuestId" asp-items="Model.Guests" class="form-select">
+            <option value="">— выберите —</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="HotelId" class="form-label">Отель</label>
+        <select asp-for="HotelId" asp-items="Model.Hotels" class="form-select">
+            <option value="">— выберите —</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="CheckInPlan" class="form-label">Дата заезда</label>
+        <input asp-for="CheckInPlan" type="date" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="CheckOutPlan" class="form-label">Дата выезда</label>
+        <input asp-for="CheckOutPlan" type="date" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Source" class="form-label">Источник</label>
+        <select asp-for="Source" class="form-select">
+            <option value="">— не указан —</option>
+            <option>сайт</option>
+            <option>стойка</option>
+            <option>телефон</option>
+            <option>агент</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>

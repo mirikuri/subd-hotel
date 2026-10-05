@@ -1,0 +1,20 @@
+@page "{id:int}"
+@model DeleteModel
+@{ ViewData["Title"] = "Отключить пользователя"; }
+
+<h4>Отключить пользователя</h4>
+<div class="alert alert-warning">
+    Учётная запись будет деактивирована. Данные сохранятся в журнале.
+</div>
+<dl class="row">
+    <dt class="col-sm-3">Сотрудник</dt>
+    <dd class="col-sm-9">@Model.UserItem.Employee.FullName</dd>
+    <dt class="col-sm-3">Логин</dt>
+    <dd class="col-sm-9">@Model.UserItem.Login</dd>
+    <dt class="col-sm-3">Роль</dt>
+    <dd class="col-sm-9">@Model.UserItem.Role</dd>
+</dl>
+<form method="post">
+    <button type="submit" class="btn btn-danger">Отключить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>

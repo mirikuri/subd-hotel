@@ -1,0 +1,63 @@
+@page "{id:int}"
+@model EditModel
+@{ ViewData["Title"] = "Изменить бронь"; }
+
+<h4>Изменить бронь</h4>
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="mb-3">
+        <label class="form-label">Гость</label>
+        <input type="text" class="form-control" value="@Model.GuestName" disabled />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Отель</label>
+        <input type="text" class="form-control" value="@Model.HotelName" disabled />
+    </div>
+    <div class="mb-3">
+        <label asp-for="CheckInPlan" class="form-label">Дата заезда</label>
+        <input asp-for="CheckInPlan" type="date" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="CheckOutPlan" class="form-label">Дата выезда</label>
+        <input asp-for="CheckOutPlan" type="date" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Source" class="form-label">Источник</label>
+        <select asp-for="Source" class="form-select">
+            <option value="">— не указан —</option>
+            <option>сайт</option>
+            <option>стойка</option>
+            <option>телефон</option>
+            <option>агент</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Status" class="form-label">Статус</label>
+        <select asp-for="Status" class="form-select" id="statusSelect">
+            <option value="новая">новая</option>
+            <option value="подтверждена">подтверждена</option>
+            <option value="заселён">заселён</option>
+            <option value="завершена">завершена</option>
+            <option value="отменена">отменена</option>
+        </select>
+    </div>
+    <div class="mb-3" id="cancelBlock" style="display:none">
+        <label asp-for="CancelReason" class="form-label">Причина отмены</label>
+        <textarea asp-for="CancelReason" class="form-control" rows="2"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>
+
+<script>
+    (function() {
+        var sel = document.getElementById('statusSelect');
+        var block = document.getElementById('cancelBlock');
+        function toggle() { block.style.display = sel.value === 'отменена' ? '' : 'none'; }
+        sel.addEventListener('change', toggle);
+        toggle();
+    })();
+</script>

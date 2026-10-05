@@ -1,0 +1,36 @@
+@page
+@model CreateModel
+@{ ViewData["Title"] = "Добавить сотрудника"; }
+
+<h4>Добавить сотрудника</h4>
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="mb-3">
+        <label asp-for="FullName" class="form-label">ФИО</label>
+        <input asp-for="FullName" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Phone" class="form-label">Телефон</label>
+        <input asp-for="Phone" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="HotelId" class="form-label">Отель</label>
+        <select asp-for="HotelId" asp-items="Model.Hotels" class="form-select">
+            <option value="">— выберите —</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="PositionId" class="form-label">Должность</label>
+        <select asp-for="PositionId" asp-items="Model.Positions" class="form-select">
+            <option value="">— выберите —</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="HireDate" class="form-label">Дата приёма</label>
+        <input asp-for="HireDate" type="date" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>

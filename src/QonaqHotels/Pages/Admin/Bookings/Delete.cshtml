@@ -1,0 +1,36 @@
+@page "{id:int}"
+@model DeleteModel
+@{ ViewData["Title"] = "Удалить бронь"; }
+
+<h4>Удалить бронь</h4>
+
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+@if (Model.Booking != null)
+{
+    @if (Model.Booking.Status != "новая")
+    {
+        <div class="alert alert-danger">
+            Нельзя удалить бронь со статусом «@Model.Booking.Status». Удаление разрешено только для статуса «новая».
+        </div>
+        <a asp-page="Index" class="btn btn-secondary">Назад</a>
+    }
+    else
+    {
+        <div class="alert alert-warning">Это действие необратимо.</div>
+        <dl class="row">
+            <dt class="col-sm-3">Гость</dt>
+            <dd class="col-sm-9">@Model.Booking.Guest.FullName</dd>
+            <dt class="col-sm-3">Отель</dt>
+            <dd class="col-sm-9">@Model.Booking.Hotel.Name</dd>
+            <dt class="col-sm-3">Заезд</dt>
+            <dd class="col-sm-9">@Model.Booking.CheckInPlan.ToString("dd.MM.yyyy")</dd>
+            <dt class="col-sm-3">Выезд</dt>
+            <dd class="col-sm-9">@Model.Booking.CheckOutPlan.ToString("dd.MM.yyyy")</dd>
+        </dl>
+        <form method="post">
+            <button type="submit" class="btn btn-danger">Удалить</button>
+            <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+        </form>
+    }
+}
