@@ -22,9 +22,12 @@
         @foreach (var e in Model.Employees)
         {
             <tr>
-                <td>@e.FullName</td>
-                <td>@e.Hotel.Name</td>
-                <td>@e.Position.Name</td>
+                <td>
+                    @e.FullName
+                    <div class="text-muted small">#@e.Id</div>
+                </td>
+                <td>@e.HotelName</td>
+                <td>@e.PositionName</td>
                 <td>@e.HireDate.ToString("dd.MM.yyyy")</td>
                 <td>
                     @if (e.DismissalDate == null)
@@ -38,7 +41,16 @@
                 </td>
                 <td>
                     <a asp-page="Edit" asp-route-id="@e.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
-                    <a asp-page="Delete" asp-route-id="@e.Id" class="btn btn-outline-danger btn-sm">Уволить</a>
+                    @if (e.DismissalDate == null)
+                    {
+                        <a asp-page="Delete" asp-route-id="@e.Id" class="btn btn-outline-danger btn-sm">Уволить</a>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Rehire" asp-route-id="@e.Id" style="display:inline">
+                            <button type="submit" class="btn btn-outline-success btn-sm">Восстановить</button>
+                        </form>
+                    }
                 </td>
             </tr>
         }

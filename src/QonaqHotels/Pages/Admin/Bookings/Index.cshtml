@@ -23,8 +23,11 @@
         @foreach (var b in Model.Bookings)
         {
             <tr>
-                <td>@b.Guest.FullName</td>
-                <td>@b.Hotel.Name</td>
+                <td>
+                    @b.GuestName
+                    <div class="text-muted small">#@b.Id</div>
+                </td>
+                <td>@b.HotelName</td>
                 <td>@b.CheckInPlan.ToString("dd.MM.yyyy")</td>
                 <td>@b.CheckOutPlan.ToString("dd.MM.yyyy")</td>
                 <td>
