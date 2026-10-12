@@ -40,3 +40,15 @@
     <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
 </form>
 </div></div>
+
+<script>
+(function() {
+    var v = window.adminValidation;
+    var form = document.querySelector('form');
+    var checkIn = form.querySelector('#CheckInPlan');
+    var checkOut = form.querySelector('#CheckOutPlan');
+    var revalidate = v.validateDateRange(checkIn, checkOut, false);
+    revalidate();
+    v.bindSubmitGate(form, [revalidate]);
+})();
+</script>

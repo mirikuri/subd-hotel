@@ -61,3 +61,15 @@
         toggle();
     })();
 </script>
+
+<script>
+(function() {
+    var v = window.adminValidation;
+    var form = document.querySelector('form');
+    var checkIn = form.querySelector('#CheckInPlan');
+    var checkOut = form.querySelector('#CheckOutPlan');
+    var revalidate = v.validateDateRange(checkIn, checkOut, true);
+    revalidate();
+    v.bindSubmitGate(form, [revalidate]);
+})();
+</script>
