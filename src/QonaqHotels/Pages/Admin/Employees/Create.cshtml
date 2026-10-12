@@ -34,3 +34,21 @@
     <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
 </form>
 </div></div>
+
+<script>
+(function() {
+    var v = window.adminValidation;
+    var form = document.querySelector('form');
+    var nameInput = form.querySelector('#FullName');
+    var phoneInput = form.querySelector('#Phone');
+    var hireInput = form.querySelector('#HireDate');
+
+    hireInput.max = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
+
+    var validators = [
+        function() { return v.validateName(nameInput); },
+        function() { return v.validatePhone(phoneInput); }
+    ];
+    v.bindSubmitGate(form, validators);
+})();
+</script>

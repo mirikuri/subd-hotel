@@ -28,10 +28,46 @@
         <input asp-for="HireDate" type="date" class="form-control" />
     </div>
     <div class="mb-3">
-        <label asp-for="DismissalDate" class="form-label">Дата увольнения <small class="text-muted">(оставьте пустым если работает)</small></label>
-        <input asp-for="DismissalDate" type="date" class="form-control" />
+        <div class="form-check">
+            <input asp-for="IsWorking" class="form-check-input" id="isWorking"
+                   onchange="document.getElementById('dismissalBlock').style.display=this.checked?'none':''"/>
+            <label asp-for="IsWorking" class="form-check-label fw-semibold">Работает</label>
+        </div>
+    </div>
+    <div class="mb-3 border rounded p-3 bg-light" id="dismissalBlock"
+         style="@(Model.IsWorking ? "display:none" : "")">
+        <label asp-for="DismissalDate" class="form-label">Дата увольнения</label>
+        <input asp-for="DismissalDate" type="date" class="form-control"
+               value="@(Model.DismissalDate?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"))" />
+        <div class="form-text text-muted">Оставьте галочку «Работает», чтобы отменить увольнение.</div>
     </div>
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
 </form>
 </div></div>
+
+<script>
+(function() {
+    var v = window.adminValidation;
+    var form = document.querySelector('form');
+    var nameInput = form.querySelector('#FullName');
+    var phoneInput = form.querySelector('#Phone');
+    var hireInput = form.querySelector('#HireDate');
+    var dismissalInput = form.querySelector('#DismissalDate');
+
+    hireInput.max = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
+
+    var revalidateDismissal = null;
+    if (dismissalInput) {
+        revalidateDismissal = v.validateDismissalDate(hireInput, dismissalInput);
+        revalidateDismissal();
+    }
+
+    var validators = [
+        function() { return v.validateName(nameInput); },
+        function() { return v.validatePhone(phoneInput); },
+        function() { return revalidateDismissal ? revalidateDismissal() : true; }
+    ];
+    v.bindSubmitGate(form, validators);
+})();
+</script>
