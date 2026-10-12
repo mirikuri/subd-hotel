@@ -7,6 +7,8 @@
     <a asp-page="Create" class="btn btn-primary btn-sm">+ Добавить</a>
 </div>
 
+<partial name="_FilterBar" model="Model.FilterBar" />
+
 <table class="table table-bordered table-sm table-hover">
     <thead class="table-light">
         <tr>
@@ -19,37 +21,11 @@
             <th></th>
         </tr>
     </thead>
-    <tbody>
-        @foreach (var b in Model.Bookings)
-        {
-            <tr>
-                <td>
-                    @b.GuestName
-                    <div class="text-muted small">#@b.Id</div>
-                </td>
-                <td>@b.HotelName</td>
-                <td>@b.CheckInPlan.ToString("dd.MM.yyyy")</td>
-                <td>@b.CheckOutPlan.ToString("dd.MM.yyyy")</td>
-                <td>
-                    @{
-                        var badgeClass = b.Status switch
-                        {
-                            "новая"       => "bg-primary",
-                            "подтверждена" => "bg-info text-dark",
-                            "заселён"     => "bg-success",
-                            "завершена"   => "bg-secondary",
-                            "отменена"    => "bg-danger",
-                            _             => "bg-light text-dark"
-                        };
-                    }
-                    <span class="badge @badgeClass">@b.Status</span>
-                </td>
-                <td>@(b.Source ?? "—")</td>
-                <td>
-                    <a asp-page="Edit" asp-route-id="@b.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
-                    <a asp-page="Delete" asp-route-id="@b.Id" class="btn btn-outline-danger btn-sm">Удалить</a>
-                </td>
-            </tr>
-        }
+    <tbody id="bookings-tbody">
+        <partial name="_BookingsRows" model="Model.Bookings" />
     </tbody>
 </table>
+
+<script>
+    initFilter({ formId: 'bookings-filter', tbodyId: 'bookings-tbody', searchUrl: '/Admin/Bookings' });
+</script>
