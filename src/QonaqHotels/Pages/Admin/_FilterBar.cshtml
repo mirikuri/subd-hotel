@@ -1,0 +1,29 @@
+@using QonaqHotels.Pages.Admin
+@model FilterBarModel
+
+<form id="@Model.FormId" class="row g-2 mb-3 align-items-end">
+    @foreach (var f in Model.Fields)
+    {
+        <div class="col-auto">
+            @if (f.Type == "select")
+            {
+                <select name="@f.Name" class="form-select form-select-sm">
+                    <option value="">@f.Placeholder</option>
+                    @foreach (var opt in f.Options)
+                    {
+                        <option value="@opt.Value">@opt.Label</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <input type="text" name="@f.Name" class="form-control form-control-sm"
+                       placeholder="@f.Placeholder" autocomplete="off" />
+            }
+        </div>
+    }
+    <div class="col-auto">
+        <button type="button" id="@(Model.FormId)-reset"
+                class="btn btn-outline-secondary btn-sm">Сбросить</button>
+    </div>
+</form>
