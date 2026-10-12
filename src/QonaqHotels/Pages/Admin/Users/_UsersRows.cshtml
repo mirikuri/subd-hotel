@@ -1,0 +1,42 @@
+@using QonaqHotels.Pages.Admin.Users
+@model IEnumerable<UserRow>
+
+@foreach (var u in Model)
+{
+    <tr>
+        <td>
+            @u.EmployeeName
+            <div class="text-muted small">@u.HotelName</div>
+        </td>
+        <td>@u.Login</td>
+        <td>@u.Role</td>
+        <td>@(u.LastLoginAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+        <td>
+            @if (!u.IsActive)
+            {
+                <span class="badge bg-secondary">Отключён</span>
+            }
+            else if (u.LockedUntil > DateTime.UtcNow)
+            {
+                <span class="badge bg-warning text-dark">Заблокирован</span>
+            }
+            else
+            {
+                <span class="badge bg-success">Активен</span>
+            }
+        </td>
+        <td>
+            <a asp-page="Edit" asp-route-id="@u.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+            @if (!u.IsActive)
+            {
+                <form method="post" asp-page-handler="Enable" asp-route-id="@u.Id" style="display:inline">
+                    <button type="submit" class="btn btn-outline-success btn-sm">Включить</button>
+                </form>
+            }
+            else
+            {
+                <a asp-page="Delete" asp-route-id="@u.Id" class="btn btn-outline-danger btn-sm">Отключить</a>
+            }
+        </td>
+    </tr>
+}
