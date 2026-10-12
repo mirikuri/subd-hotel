@@ -7,6 +7,8 @@
     <a asp-page="Create" class="btn btn-primary btn-sm">+ Добавить</a>
 </div>
 
+<partial name="_FilterBar" model="Model.FilterBar" />
+
 <table class="table table-bordered table-sm table-hover">
     <thead class="table-light">
         <tr>
@@ -18,41 +20,11 @@
             <th></th>
         </tr>
     </thead>
-    <tbody>
-        @foreach (var e in Model.Employees)
-        {
-            <tr>
-                <td>
-                    @e.FullName
-                    <div class="text-muted small">#@e.Id</div>
-                </td>
-                <td>@e.HotelName</td>
-                <td>@e.PositionName</td>
-                <td>@e.HireDate.ToString("dd.MM.yyyy")</td>
-                <td>
-                    @if (e.DismissalDate == null)
-                    {
-                        <span class="badge bg-success">Работает</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">Уволен @e.DismissalDate.Value.ToString("dd.MM.yyyy")</span>
-                    }
-                </td>
-                <td>
-                    <a asp-page="Edit" asp-route-id="@e.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
-                    @if (e.DismissalDate == null)
-                    {
-                        <a asp-page="Delete" asp-route-id="@e.Id" class="btn btn-outline-danger btn-sm">Уволить</a>
-                    }
-                    else
-                    {
-                        <form method="post" asp-page-handler="Rehire" asp-route-id="@e.Id" style="display:inline">
-                            <button type="submit" class="btn btn-outline-success btn-sm">Восстановить</button>
-                        </form>
-                    }
-                </td>
-            </tr>
-        }
+    <tbody id="employees-tbody">
+        <partial name="_EmployeesRows" model="Model.Employees" />
     </tbody>
 </table>
+
+<script>
+    initFilter({ formId: 'employees-filter', tbodyId: 'employees-tbody', searchUrl: '/Admin/Employees' });
+</script>

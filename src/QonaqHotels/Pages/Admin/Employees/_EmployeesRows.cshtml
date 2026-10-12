@@ -1,0 +1,38 @@
+@using QonaqHotels.Pages.Admin.Employees
+@model IEnumerable<EmployeeRow>
+
+@foreach (var e in Model)
+{
+    <tr>
+        <td>
+            @e.FullName
+            <div class="text-muted small">#@e.Id</div>
+        </td>
+        <td>@e.HotelName</td>
+        <td>@e.PositionName</td>
+        <td>@e.HireDate.ToString("dd.MM.yyyy")</td>
+        <td>
+            @if (e.DismissalDate == null)
+            {
+                <span class="badge bg-success">Работает</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Уволен @e.DismissalDate.Value.ToString("dd.MM.yyyy")</span>
+            }
+        </td>
+        <td>
+            <a asp-page="Edit" asp-route-id="@e.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+            @if (e.DismissalDate == null)
+            {
+                <a asp-page="Delete" asp-route-id="@e.Id" class="btn btn-outline-danger btn-sm">Уволить</a>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Rehire" asp-route-id="@e.Id" style="display:inline">
+                    <button type="submit" class="btn btn-outline-success btn-sm">Восстановить</button>
+                </form>
+            }
+        </td>
+    </tr>
+}
