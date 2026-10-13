@@ -1,0 +1,26 @@
+@using QonaqHotels.Pages.Admin.Guests
+@model IEnumerable<GuestRow>
+
+@foreach (var g in Model)
+{
+    <tr>
+        <td>@g.FullName</td>
+        <td>@g.DocumentNumber</td>
+        <td>@(g.Phone ?? "—")</td>
+        <td>@g.CountryName</td>
+        <td>
+            @if (g.IsActive)
+            {
+                <span class="badge bg-success">Активен</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Отключён</span>
+            }
+        </td>
+        <td>
+            <a asp-page="Edit" asp-route-id="@g.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+            <a asp-page="Delete" asp-route-id="@g.Id" class="btn btn-outline-danger btn-sm">Удалить</a>
+        </td>
+    </tr>
+}

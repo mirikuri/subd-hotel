@@ -1,0 +1,30 @@
+@page
+@model IndexModel
+@{ ViewData["Title"] = "Гости"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Гости</h4>
+    <a asp-page="Create" class="btn btn-primary btn-sm">+ Добавить</a>
+</div>
+
+<partial name="_FilterBar" model="Model.FilterBar" />
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light">
+        <tr>
+            <th>ФИО</th>
+            <th>Документ</th>
+            <th>Телефон</th>
+            <th>Страна</th>
+            <th>Статус</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="guests-tbody">
+        <partial name="_GuestsRows" model="Model.Guests" />
+    </tbody>
+</table>
+
+<script>
+    initFilter({ formId: 'guests-filter', tbodyId: 'guests-tbody', searchUrl: '/Admin/Guests' });
+</script>
