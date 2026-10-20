@@ -29,7 +29,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         using var conn = _db.Open();
-        Employees = await LoadEmployees(conn, null, null, null, null);
+        Employees = await LoadEmployees(conn, null, null, null, null, null, null);
         var hotels    = await LoadOptions(conn, "SELECT id, name FROM hotels ORDER BY name");
         var positions = await LoadOptions(conn, "SELECT id, name FROM positions ORDER BY name");
         FilterBar = new FilterBarModel
@@ -41,15 +41,19 @@ public class IndexModel : PageModel
                 new() { Type = "select", Name = "hotel",    Placeholder = "Все отели",     Options = hotels },
                 new() { Type = "select", Name = "position", Placeholder = "Все должности", Options = positions },
                 new() { Type = "select", Name = "status",   Placeholder = "Все статусы",
-                    Options = [("работает","Работает"),("уволен","Уволен")] }
+                    Options = [("работает","Работает"),("уволен","Уволен")] },
+                new() { Type = "date", Name = "hireDateFrom", Placeholder = "Принят с"  },
+                new() { Type = "date", Name = "hireDateTo",   Placeholder = "Принят по" }
             ]
         };
     }
 
-    public async Task<IActionResult> OnGetSearchAsync(string? q, int? hotel, int? position, string? status)
+    public async Task<IActionResult> OnGetSearchAsync(
+        string? q, int? hotel, int? position, string? status,
+        DateOnly? hireDateFrom, DateOnly? hireDateTo)
     {
         using var conn = _db.Open();
-        var rows = await LoadEmployees(conn, q, hotel, position, status);
+        var rows = await LoadEmployees(conn, q, hotel, position, status, hireDateFrom, hireDateTo);
         return Partial("_EmployeesRows", rows);
     }
 
@@ -69,7 +73,8 @@ public class IndexModel : PageModel
     }
 
     private static async Task<List<EmployeeRow>> LoadEmployees(
-        NpgsqlConnection conn, string? q, int? hotel, int? position, string? status)
+        NpgsqlConnection conn, string? q, int? hotel, int? position, string? status,
+        DateOnly? hireDateFrom, DateOnly? hireDateTo)
     {
         var safeQ = q is null ? null : "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
         using var cmd = new NpgsqlCommand(
@@ -83,12 +88,16 @@ public class IndexModel : PageModel
             "  AND (@status::text IS NULL " +
             "       OR (@status = 'работает' AND e.dismissal_date IS NULL) " +
             "       OR (@status = 'уволен'   AND e.dismissal_date IS NOT NULL)) " +
+            "  AND (@hireDateFrom::date IS NULL OR e.hire_date >= @hireDateFrom) " +
+            "  AND (@hireDateTo::date IS NULL OR e.hire_date <= @hireDateTo) " +
             "ORDER BY e.full_name", conn);
 
-        cmd.Parameters.AddWithValue("q",        (object?)safeQ    ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("hotel",    (object?)hotel    ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("position", (object?)position ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("status",   (object?)status   ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("q",           (object?)safeQ       ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("hotel",       (object?)hotel       ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("position",    (object?)position    ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("status",      (object?)status      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("hireDateFrom", (object?)hireDateFrom ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("hireDateTo",   (object?)hireDateTo   ?? DBNull.Value);
 
         var rows = new List<EmployeeRow>();
         using var r = await cmd.ExecuteReaderAsync();

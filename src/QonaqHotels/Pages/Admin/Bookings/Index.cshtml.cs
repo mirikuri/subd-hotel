@@ -30,7 +30,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         using var conn = _db.Open();
-        Bookings = await LoadBookings(conn, null, null, null, null);
+        Bookings = await LoadBookings(conn, null, null, null, null, null, null, null, null);
         var hotels = await LoadHotelOptions(conn);
         FilterBar = new FilterBarModel
         {
@@ -43,20 +43,29 @@ public class IndexModel : PageModel
                     Options = [("новая","новая"),("подтверждена","подтверждена"),
                                ("заселён","заселён"),("завершена","завершена"),("отменена","отменена")] },
                 new() { Type = "select", Name = "source", Placeholder = "Все источники",
-                    Options = [("сайт","сайт"),("стойка","стойка"),("телефон","телефон"),("агрегатор","агрегатор")] }
+                    Options = [("сайт","сайт"),("стойка","стойка"),("телефон","телефон"),("агрегатор","агрегатор")] },
+                new() { Type = "date", Name = "checkinFrom",  Placeholder = "Заезд с"  },
+                new() { Type = "date", Name = "checkinTo",    Placeholder = "Заезд по" },
+                new() { Type = "date", Name = "checkoutFrom", Placeholder = "Выезд с"  },
+                new() { Type = "date", Name = "checkoutTo",   Placeholder = "Выезд по" }
             ]
         };
     }
 
-    public async Task<IActionResult> OnGetSearchAsync(string? q, int? hotel, string? status, string? source)
+    public async Task<IActionResult> OnGetSearchAsync(
+        string? q, int? hotel, string? status, string? source,
+        DateOnly? checkinFrom, DateOnly? checkinTo,
+        DateOnly? checkoutFrom, DateOnly? checkoutTo)
     {
         using var conn = _db.Open();
-        var rows = await LoadBookings(conn, q, hotel, status, source);
+        var rows = await LoadBookings(conn, q, hotel, status, source,
+            checkinFrom, checkinTo, checkoutFrom, checkoutTo);
         return Partial("_BookingsRows", rows);
     }
 
     private static async Task<List<BookingRow>> LoadBookings(
-        NpgsqlConnection conn, string? q, int? hotel, string? status, string? source)
+        NpgsqlConnection conn, string? q, int? hotel, string? status, string? source,
+        DateOnly? checkinFrom, DateOnly? checkinTo, DateOnly? checkoutFrom, DateOnly? checkoutTo)
     {
         var safeQ = q is null ? null : "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
         using var cmd = new NpgsqlCommand(
@@ -68,12 +77,20 @@ public class IndexModel : PageModel
             "  AND (@hotel::int IS NULL OR b.hotel_id = @hotel) " +
             "  AND (@status::text IS NULL OR b.status = @status) " +
             "  AND (@source::text IS NULL OR b.source = @source) " +
+            "  AND (@checkinFrom::date IS NULL OR b.check_in_plan >= @checkinFrom) " +
+            "  AND (@checkinTo::date IS NULL OR b.check_in_plan <= @checkinTo) " +
+            "  AND (@checkoutFrom::date IS NULL OR b.check_out_plan >= @checkoutFrom) " +
+            "  AND (@checkoutTo::date IS NULL OR b.check_out_plan <= @checkoutTo) " +
             "ORDER BY b.booking_date DESC", conn);
 
-        cmd.Parameters.AddWithValue("q",      (object?)safeQ  ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("hotel",  (object?)hotel  ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("status", (object?)status ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("source", (object?)source ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("q",           (object?)safeQ       ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("hotel",       (object?)hotel       ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("status",      (object?)status      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("source",      (object?)source      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("checkinFrom",  (object?)checkinFrom  ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("checkinTo",    (object?)checkinTo    ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("checkoutFrom", (object?)checkoutFrom ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("checkoutTo",   (object?)checkoutTo   ?? DBNull.Value);
 
         var rows = new List<BookingRow>();
         using var r = await cmd.ExecuteReaderAsync();

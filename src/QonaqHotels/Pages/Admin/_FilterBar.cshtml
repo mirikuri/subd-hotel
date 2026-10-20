@@ -15,6 +15,11 @@
                     }
                 </select>
             }
+            else if (f.Type == "date")
+            {
+                <label class="form-label form-label-sm mb-0 text-muted small">@f.Placeholder</label>
+                <input type="date" name="@f.Name" class="form-control form-control-sm" />
+            }
             else
             {
                 <input type="text" name="@f.Name" class="form-control form-control-sm"
@@ -23,7 +28,8 @@
         </div>
     }
     <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm">Найти</button>
         <button type="button" id="@(Model.FormId)-reset"
-                class="btn btn-outline-secondary btn-sm">Сбросить</button>
+                class="btn btn-outline-secondary btn-sm ms-1">Сбросить</button>
     </div>
 </form>
