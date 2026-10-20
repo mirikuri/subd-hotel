@@ -17,8 +17,8 @@
             }
             else if (f.Type == "date")
             {
-                <label class="form-label form-label-sm mb-0 text-muted small">@f.Placeholder</label>
-                <input type="date" name="@f.Name" class="form-control form-control-sm" />
+                <label for="@f.Name" class="form-label form-label-sm mb-0 text-muted small">@f.Placeholder</label>
+                <input type="date" id="@f.Name" name="@f.Name" class="form-control form-control-sm" />
             }
             else
             {
