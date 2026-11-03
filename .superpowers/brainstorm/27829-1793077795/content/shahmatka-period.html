@@ -1,0 +1,169 @@
+<style>
+.demo-grid {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+}
+.demo-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.nav-btn {
+  background: #fff; border: 1px solid #d0d5dd; border-radius: 4px;
+  padding: 3px 8px; font-size: 11px; cursor: pointer;
+}
+.period-lbl { font-size: 11px; font-weight: 600; color: #374151; }
+.demo-table { width: 100%; border-collapse: collapse; }
+.demo-table th, .demo-table td {
+  border: 1px solid #f0f2f5; text-align: center; font-size: 10px;
+}
+.room-col { background: #f7f8fa; font-weight: 600; color: #374151; padding: 4px 6px; text-align: left; white-space: nowrap; width: 70px; }
+.day-th { background: #f7f8fa; color: #6b7280; padding: 3px 2px; min-width: 32px; }
+.day-th.today-h { border-bottom: 2px solid #C8A165; color: #C8A165; }
+.cell { height: 28px; position: relative; }
+.cell.today-c { background: rgba(200,161,101,.05); }
+.block {
+  position: absolute; top: 2px; bottom: 2px; border-radius: 2px;
+  font-size: 9px; color: #fff; font-weight: 600; padding: 0 3px;
+  display: flex; align-items: center; overflow: hidden;
+  cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+.confirmed { background: #C8A165; }
+.checked   { background: #16a34a; }
+.new       { background: #3b82f6; }
+</style>
+
+<h2>Вопрос 2 из 3 — сколько дней показывать сразу?</h2>
+<p class="subtitle">Выбор влияет на ширину ячеек и плотность информации.</p>
+
+<div class="options">
+  <div class="option" data-choice="14" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>14 дней</h3>
+      <p>Ячейки широкие — видно имя гостя. Меньше прокрутки по горизонтали, чаще листать.</p>
+      <div class="demo-grid" style="margin-top:10px">
+        <div class="demo-toolbar">
+          <button class="nav-btn">←</button>
+          <span class="period-lbl">27 окт — 9 ноя</span>
+          <button class="nav-btn">→</button>
+        </div>
+        <table class="demo-table">
+          <thead><tr>
+            <th class="room-col">Номер</th>
+            <th class="day-th">27</th><th class="day-th">28</th><th class="day-th today-h">29</th>
+            <th class="day-th">30</th><th class="day-th">31</th><th class="day-th">1</th>
+            <th class="day-th">2</th><th class="day-th">3</th><th class="day-th">4</th>
+            <th class="day-th">5</th><th class="day-th">6</th><th class="day-th">7</th>
+            <th class="day-th">8</th><th class="day-th">9</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="room-col">201 Станд.</td>
+              <td class="cell" colspan="3" style="position:relative"><div class="block confirmed" style="left:2px;right:0">Алиев С.</div></td>
+              <td class="cell today-c" style="position:relative"><div class="block confirmed" style="left:0;right:2px"></div></td>
+              <td class="cell"></td><td class="cell"></td>
+              <td class="cell" colspan="2" style="position:relative"><div class="block new" style="left:2px;right:2px">Иванов</div></td>
+              <td class="cell" colspan="3" style="position:relative"><div class="block confirmed" style="left:2px;right:0">Петров Д.</div></td>
+              <td class="cell" style="position:relative"><div class="block confirmed" style="left:0;right:2px"></div></td>
+              <td class="cell"></td>
+            </tr>
+            <tr>
+              <td class="room-col">202 Станд.</td>
+              <td class="cell"></td><td class="cell"></td>
+              <td class="cell today-c" colspan="5" style="position:relative"><div class="block checked" style="left:2px;right:0">Жаксыбеков</div></td>
+              <td class="cell" style="position:relative"><div class="block checked" style="left:0;right:2px"></div></td>
+              <td class="cell" colspan="5"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="30" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>30 дней</h3>
+      <p>Ячейки узкие — видно только цвет. Весь месяц охвачен одним взглядом, реже листать.</p>
+      <div class="demo-grid" style="margin-top:10px;font-size:10px">
+        <div class="demo-toolbar">
+          <button class="nav-btn">←</button>
+          <span class="period-lbl">1 — 30 ноября 2026</span>
+          <button class="nav-btn">→</button>
+        </div>
+        <table class="demo-table">
+          <thead><tr>
+            <th class="room-col">Номер</th>
+            <th class="day-th" style="min-width:18px;width:18px">1</th>
+            <th class="day-th" style="min-width:18px;width:18px">2</th>
+            <th class="day-th" style="min-width:18px;width:18px">3</th>
+            <th class="day-th" style="min-width:18px;width:18px">4</th>
+            <th class="day-th" style="min-width:18px;width:18px">5</th>
+            <th class="day-th" style="min-width:18px;width:18px">6</th>
+            <th class="day-th" style="min-width:18px;width:18px">7</th>
+            <th class="day-th" style="min-width:18px;width:18px">8</th>
+            <th class="day-th" style="min-width:18px;width:18px">9</th>
+            <th class="day-th" style="min-width:18px;width:18px">10</th>
+            <th class="day-th" style="min-width:18px;width:18px">11</th>
+            <th class="day-th" style="min-width:18px;width:18px">12</th>
+            <th class="day-th" style="min-width:18px;width:18px">13</th>
+            <th class="day-th" style="min-width:18px;width:18px">14</th>
+            <th class="day-th" style="min-width:18px;width:18px">15</th>
+            <th class="day-th" style="min-width:18px;width:18px">16</th>
+            <th class="day-th" style="min-width:18px;width:18px">17</th>
+            <th class="day-th" style="min-width:18px;width:18px">18</th>
+            <th class="day-th" style="min-width:18px;width:18px">19</th>
+            <th class="day-th" style="min-width:18px;width:18px">20</th>
+            <th class="day-th" style="min-width:18px;width:18px">21</th>
+            <th class="day-th" style="min-width:18px;width:18px">22</th>
+            <th class="day-th" style="min-width:18px;width:18px">23</th>
+            <th class="day-th" style="min-width:18px;width:18px">24</th>
+            <th class="day-th" style="min-width:18px;width:18px">25</th>
+            <th class="day-th" style="min-width:18px;width:18px">26</th>
+            <th class="day-th" style="min-width:18px;width:18px">27</th>
+            <th class="day-th" style="min-width:18px;width:18px">28</th>
+            <th class="day-th" style="min-width:18px;width:18px">29</th>
+            <th class="day-th" style="min-width:18px;width:18px">30</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="room-col">201</td>
+              <td class="cell" colspan="4" style="position:relative"><div class="block confirmed" style="left:1px;right:0"></div></td>
+              <td class="cell" style="position:relative"><div class="block confirmed" style="left:0;right:1px"></div></td>
+              <td class="cell"></td><td class="cell"></td>
+              <td class="cell" colspan="3" style="position:relative"><div class="block new" style="left:1px;right:1px"></div></td>
+              <td class="cell" colspan="5" style="position:relative"><div class="block confirmed" style="left:1px;right:1px"></div></td>
+              <td class="cell" colspan="14"></td>
+            </tr>
+            <tr>
+              <td class="room-col">202</td>
+              <td class="cell" colspan="3"></td>
+              <td class="cell" colspan="7" style="position:relative"><div class="block checked" style="left:1px;right:1px"></div></td>
+              <td class="cell" colspan="20"></td>
+            </tr>
+            <tr>
+              <td class="room-col">203</td>
+              <td class="cell" colspan="30"></td>
+            </tr>
+            <tr>
+              <td class="room-col">204</td>
+              <td class="cell" colspan="2"></td>
+              <td class="cell" colspan="4" style="position:relative"><div class="block confirmed" style="left:1px;right:1px"></div></td>
+              <td class="cell" colspan="10"></td>
+              <td class="cell" colspan="5" style="position:relative"><div class="block new" style="left:1px;right:1px"></div></td>
+              <td class="cell" colspan="9"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<h2>Выбор номера в форме брони</h2>
+<p class="subtitle">Отель и даты уже выбраны выше. Как удобнее выбирать номер вместо длинного списка?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Тип номера + «любой свободный» или конкретный</h3>
+      <div class="mockup">
+        <div class="mockup-header">Номер · Qonaq Astana Center · 12–15 ноя</div>
+        <div class="mockup-body" style="font-size:14px">
+          <div style="margin-bottom:8px"><b>Тип:</b>
+            <span class="mock-button" style="padding:2px 8px">Стандарт · 18 своб.</span>
+            <span class="mock-button" style="padding:2px 8px">Комфорт · 12</span>
+            <span class="mock-button" style="padding:2px 8px;outline:2px solid #e0a800">Люкс · 5</span>
+            <span class="mock-button" style="padding:2px 8px">Полулюкс · 0</span> …
+          </div>
+          <div style="margin-bottom:6px">
+            <label>◉ Любой свободный люкс <span style="opacity:.6">(система назначит при сохранении)</span></label><br>
+            <label>○ Конкретный номер:</label>
+            <select class="mock-input" style="width:auto"><option>204 · эт. 2</option><option>304 · эт. 3</option></select>
+          </div>
+        </div>
+      </div>
+      <p>Сначала тип (с количеством свободных), потом по умолчанию «любой» — без выбора номера вообще.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Фильтр + плитки свободных номеров</h3>
+      <div class="mockup">
+        <div class="mockup-header">Номер · Qonaq Astana Center · 12–15 ноя</div>
+        <div class="mockup-body" style="font-size:14px">
+          <div style="margin-bottom:8px">
+            <select class="mock-input" style="width:auto"><option>Тип: Люкс</option></select>
+            <select class="mock-input" style="width:auto"><option>Этаж: любой</option></select>
+            <select class="mock-input" style="width:auto"><option>Гостей: 2</option></select>
+            <button class="mock-button">Первый свободный</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="mock-button" style="padding:6px 10px">204</span>
+            <span class="mock-button" style="padding:6px 10px;outline:2px solid #e0a800">304</span>
+            <span class="mock-button" style="padding:6px 10px">404</span>
+            <span class="mock-button" style="padding:6px 10px">504</span>
+          </div>
+        </div>
+      </div>
+      <p>Фильтры сужают до нескольких плиток; кнопка выбирает первую свободную.</p>
+    </div>
+  </div>
+</div>

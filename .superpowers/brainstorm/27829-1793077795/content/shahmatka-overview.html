@@ -1,0 +1,357 @@
+<style>
+.grid-wrap {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  margin: 0 auto;
+  max-width: 100%;
+  font-size: 13px;
+}
+.grid-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-wrap: wrap;
+}
+.grid-toolbar select, .grid-toolbar input {
+  padding: 4px 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+}
+.nav-btn {
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.nav-btn:hover { background: #f3f4f6; }
+.period-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 130px;
+  text-align: center;
+}
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Inter', sans-serif;
+}
+.grid-table th {
+  background: #f7f8fa;
+  border: 1px solid #edf0f3;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  white-space: nowrap;
+}
+.col-room { width: 90px; min-width: 90px; position: sticky; left: 0; z-index: 2; }
+.room-cell {
+  background: #f7f8fa;
+  border: 1px solid #edf0f3;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  color: #374151;
+}
+.room-type-label {
+  font-size: 9px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+.day-header {
+  min-width: 48px;
+  width: 48px;
+  padding: 4px 2px;
+  text-align: center;
+}
+.day-header .day-num { font-size: 12px; display: block; }
+.day-header .day-name { font-size: 9px; color: #9ca3af; display: block; }
+.day-header.today .day-num { color: #C8A165; }
+.day-header.today { border-bottom: 2px solid #C8A165; }
+.date-cell {
+  border: 1px solid #f0f2f5;
+  min-width: 48px;
+  width: 48px;
+  height: 36px;
+  padding: 0;
+  position: relative;
+  vertical-align: middle;
+  background: #fff;
+}
+.date-cell.today-col { background: rgba(200,161,101,.04); border-left: 1px solid rgba(200,161,101,.3); border-right: 1px solid rgba(200,161,101,.3); }
+.date-cell.weekend { background: #fafafa; }
+.booking-block {
+  position: absolute;
+  top: 3px; bottom: 3px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #fff;
+  font-weight: 600;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  transition: filter .1s;
+}
+.booking-block:hover { filter: brightness(.9); }
+/* start of block */
+.bb-start { left: 0; border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
+/* middle of block */
+.bb-mid { left: 0; right: 0; border-radius: 0; }
+/* end of block */
+.bb-end { right: 0; border-top-right-radius: 3px; border-bottom-right-radius: 3px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+/* full in one cell */
+.bb-full { left: 2px; right: 2px; }
+
+.status-new      { background: #3b82f6; }
+.status-confirmed { background: #C8A165; }
+.status-checked  { background: #16a34a; }
+.status-done     { background: #9ca3af; }
+.status-canceled { background: #ef4444; }
+
+.floor-header td {
+  background: #1E2A3A;
+  color: rgba(255,255,255,.7);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: none;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-top: 1px solid #edf0f3;
+  background: #f9fafb;
+  font-size: 11px;
+  color: #6b7280;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+</style>
+
+<h2>Шахматка — как она будет выглядеть</h2>
+<p class="subtitle">Реалистичный макет. Ниже — 3 вопроса по ключевым решениям.</p>
+
+<div class="grid-wrap">
+  <div class="grid-toolbar">
+    <select><option>Qonaq Astana Center ★★★★★</option><option>Qonaq Almaty Park ★★★★</option><option>Qonaq Shymkent ★★★</option></select>
+    <select><option>Все типы номеров</option><option>Стандарт</option><option>Люкс</option></select>
+    <button class="nav-btn">← Назад</button>
+    <span class="period-label">27 окт — 9 ноя 2026</span>
+    <button class="nav-btn">Вперёд →</button>
+    <button class="nav-btn" style="margin-left:auto;background:#C8A165;color:#fff;border-color:#C8A165">Сегодня</button>
+  </div>
+
+  <div style="overflow-x:auto">
+  <table class="grid-table">
+    <thead>
+      <tr>
+        <th class="col-room day-header">Номер</th>
+        <th class="day-header"><span class="day-num">27</span><span class="day-name">Пн</span></th>
+        <th class="day-header"><span class="day-num">28</span><span class="day-name">Вт</span></th>
+        <th class="day-header today"><span class="day-num">29</span><span class="day-name">Ср</span></th>
+        <th class="day-header"><span class="day-num">30</span><span class="day-name">Чт</span></th>
+        <th class="day-header"><span class="day-num">31</span><span class="day-name">Пт</span></th>
+        <th class="day-header weekend"><span class="day-num">1</span><span class="day-name">Сб</span></th>
+        <th class="day-header weekend"><span class="day-num">2</span><span class="day-name">Вс</span></th>
+        <th class="day-header"><span class="day-num">3</span><span class="day-name">Пн</span></th>
+        <th class="day-header"><span class="day-num">4</span><span class="day-name">Вт</span></th>
+        <th class="day-header"><span class="day-num">5</span><span class="day-name">Ср</span></th>
+        <th class="day-header"><span class="day-num">6</span><span class="day-name">Чт</span></th>
+        <th class="day-header"><span class="day-num">7</span><span class="day-name">Пт</span></th>
+        <th class="day-header weekend"><span class="day-num">8</span><span class="day-name">Сб</span></th>
+        <th class="day-header weekend"><span class="day-num">9</span><span class="day-name">Вс</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- FLOOR 2 -->
+      <tr class="floor-header"><td colspan="15">Этаж 2</td></tr>
+      <tr>
+        <td class="room-cell">201<div class="room-type-label">Стандарт</div></td>
+        <td class="date-cell" colspan="3" style="position:relative">
+          <div class="booking-block status-confirmed bb-start" style="left:2px;right:0">Алиев С.</div>
+        </td>
+        <td class="date-cell today-col" style="position:relative">
+          <div class="booking-block status-confirmed bb-end" style="left:0;right:2px"></div>
+        </td>
+        <td class="date-cell"></td>
+        <td class="date-cell weekend" colspan="2" style="position:relative">
+          <div class="booking-block status-new bb-full" style="left:2px;right:2px">Иванов</div>
+        </td>
+        <td class="date-cell" colspan="3" style="position:relative">
+          <div class="booking-block status-confirmed bb-start" style="left:2px;right:0">Петров Д.</div>
+        </td>
+        <td class="date-cell" style="position:relative">
+          <div class="booking-block status-confirmed bb-mid" style="left:0;right:0"></div>
+        </td>
+        <td class="date-cell weekend" colspan="2"></td>
+      </tr>
+      <tr>
+        <td class="room-cell">202<div class="room-type-label">Стандарт</div></td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell today-col" colspan="4" style="position:relative">
+          <div class="booking-block status-checked bb-start" style="left:2px;right:0">Жаксыбеков</div>
+        </td>
+        <td class="date-cell weekend" style="position:relative">
+          <div class="booking-block status-checked bb-mid" style="left:0;right:0"></div>
+        </td>
+        <td class="date-cell" style="position:relative">
+          <div class="booking-block status-checked bb-end" style="left:0;right:2px"></div>
+        </td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell weekend"></td>
+        <td class="date-cell weekend"></td>
+      </tr>
+      <tr>
+        <td class="room-cell">203<div class="room-type-label">Комфорт</div></td>
+        <td class="date-cell" colspan="14"></td>
+      </tr>
+      <tr>
+        <td class="room-cell">204<div class="room-type-label">Комфорт</div></td>
+        <td class="date-cell" colspan="2" style="position:relative">
+          <div class="booking-block status-done bb-start" style="left:2px;right:0;opacity:.7">Нурмагамбетов</div>
+        </td>
+        <td class="date-cell today-col" style="position:relative">
+          <div class="booking-block status-done bb-end" style="left:0;right:2px;opacity:.7"></div>
+        </td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell weekend"></td>
+        <td class="date-cell weekend" colspan="3" style="position:relative">
+          <div class="booking-block status-confirmed bb-start" style="left:2px;right:0">Смагулова А.</div>
+        </td>
+        <td class="date-cell" style="position:relative">
+          <div class="booking-block status-confirmed bb-mid" style="left:0;right:0"></div>
+        </td>
+        <td class="date-cell" style="position:relative">
+          <div class="booking-block status-confirmed bb-end" style="left:0;right:2px"></div>
+        </td>
+        <td class="date-cell weekend" colspan="2"></td>
+      </tr>
+      <tr>
+        <td class="room-cell">205<div class="room-type-label">Полулюкс</div></td>
+        <td class="date-cell" colspan="5" style="position:relative">
+          <div class="booking-block status-confirmed bb-start" style="left:2px;right:0">Ахметов К.</div>
+        </td>
+        <td class="date-cell weekend" style="position:relative">
+          <div class="booking-block status-confirmed bb-mid" style="left:0;right:0"></div>
+        </td>
+        <td class="date-cell weekend" style="position:relative">
+          <div class="booking-block status-confirmed bb-end" style="left:0;right:2px"></div>
+        </td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell"></td>
+        <td class="date-cell weekend" colspan="2"></td>
+      </tr>
+
+      <!-- FLOOR 3 -->
+      <tr class="floor-header"><td colspan="15">Этаж 3</td></tr>
+      <tr>
+        <td class="room-cell">301<div class="room-type-label">Люкс</div></td>
+        <td class="date-cell" colspan="2"></td>
+        <td class="date-cell today-col" colspan="3" style="position:relative">
+          <div class="booking-block status-checked bb-full" style="left:2px;right:2px">Сейткали</div>
+        </td>
+        <td class="date-cell weekend"></td>
+        <td class="date-cell weekend"></td>
+        <td class="date-cell" colspan="3" style="position:relative">
+          <div class="booking-block status-new bb-start" style="left:2px;right:0">Джаксыбеков</div>
+        </td>
+        <td class="date-cell" style="position:relative">
+          <div class="booking-block status-new bb-end" style="left:0;right:2px"></div>
+        </td>
+        <td class="date-cell weekend" colspan="2"></td>
+      </tr>
+      <tr>
+        <td class="room-cell">302<div class="room-type-label">Люкс</div></td>
+        <td class="date-cell" colspan="14"></td>
+      </tr>
+      <tr>
+        <td class="room-cell">303<div class="room-type-label">Семейный</div></td>
+        <td class="date-cell" colspan="5" style="position:relative">
+          <div class="booking-block status-confirmed bb-start" style="left:2px;right:0">Карпенко В.</div>
+        </td>
+        <td class="date-cell weekend" style="position:relative">
+          <div class="booking-block status-confirmed bb-mid" style="left:0;right:0"></div>
+        </td>
+        <td class="date-cell weekend" style="position:relative">
+          <div class="booking-block status-confirmed bb-mid" style="left:0;right:0"></div>
+        </td>
+        <td class="date-cell" style="position:relative">
+          <div class="booking-block status-confirmed bb-end" style="left:0;right:2px"></div>
+        </td>
+        <td class="date-cell" colspan="6"></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="legend">
+    <span style="font-weight:600;color:#374151">Статус:</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Новая</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#C8A165"></span>Подтверждена</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#16a34a"></span>Заселён</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#9ca3af"></span>Завершена</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Отменена</span>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px">
+<h3>Теперь три вопроса — кликни или напиши в терминале</h3>
+
+<p class="subtitle">Вопрос 1 из 3 — <strong>Интерактивность</strong>: что происходит при клике на блок с бронью?</p>
+<div class="options">
+  <div class="option" data-choice="view-only" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Только смотреть</h3>
+      <p>Шахматка — только для просмотра занятости. Создавать и редактировать брони — через раздел «Брони».</p>
+    </div>
+  </div>
+  <div class="option" data-choice="click-to-open" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Клик — открыть бронь</h3>
+      <p>Клик на блок → переход на страницу редактирования брони. Шахматка навигационная, не создаёт сама.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="full-interactive" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Полностью интерактивная</h3>
+      <p>Клик на свободную ячейку → форма новой брони. Клик на блок → просмотр/редактирование. Максимум удобства, сложнее в реализации.</p>
+    </div>
+  </div>
+</div>
+</div>

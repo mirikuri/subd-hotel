@@ -1,0 +1,104 @@
+<style>
+.mini-grid {
+  border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;
+  font-size: 11px; font-family: 'Inter', sans-serif; margin-top: 10px;
+}
+.mg-row { display: flex; border-bottom: 1px solid #f0f2f5; align-items: center; height: 32px; }
+.mg-row:last-child { border-bottom: none; }
+.mg-room { width: 70px; background: #f7f8fa; padding: 0 8px; font-weight: 600; color: #374151; font-size: 10px; flex-shrink: 0; border-right: 1px solid #f0f2f5; }
+.mg-days { display: flex; flex: 1; height: 100%; align-items: center; padding: 3px 2px; gap: 1px; }
+.mg-cell { flex: 1; height: 100%; position: relative; }
+.block {
+  position: absolute; top: 1px; bottom: 1px; border-radius: 3px;
+  font-size: 9px; color: #fff; font-weight: 600;
+  display: flex; align-items: center; padding: 0 4px; overflow: hidden;
+}
+.confirmed { background: #C8A165; }
+.checked   { background: #16a34a; }
+.new       { background: #3b82f6; }
+.done-dim  { background: #d1d5db; color: #6b7280; }
+.canceled-dim { background: #fecaca; color: #ef4444; border: 1px solid #fca5a5; }
+.hidden    { display: none; }
+</style>
+
+<h2>Вопрос 3 из 3 — какие брони показывать?</h2>
+<p class="subtitle">Завершённые и отменённые — нужны ли они на шахматке?</p>
+
+<div class="options">
+  <div class="option" data-choice="active-only" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Только активные</h3>
+      <p>Новые, подтверждённые, заселённые. Завершённые и отменённые — не показывать. Чистая картина текущей занятости.</p>
+      <div class="mini-grid">
+        <div class="mg-row">
+          <div class="mg-room">201</div>
+          <div class="mg-days">
+            <div class="mg-cell" style="flex:3;position:relative"><div class="block confirmed" style="left:0;right:0">Алиев</div></div>
+            <div class="mg-cell" style="flex:2"></div>
+            <div class="mg-cell" style="flex:4;position:relative"><div class="block new" style="left:0;right:0">Иванов</div></div>
+            <div class="mg-cell" style="flex:5"></div>
+          </div>
+        </div>
+        <div class="mg-row">
+          <div class="mg-room">202</div>
+          <div class="mg-days">
+            <div class="mg-cell" style="flex:2"></div>
+            <div class="mg-cell" style="flex:5;position:relative"><div class="block checked" style="left:0;right:0">Жаксыбеков</div></div>
+            <div class="mg-cell" style="flex:7"></div>
+          </div>
+        </div>
+        <div class="mg-row">
+          <div class="mg-room">203</div>
+          <div class="mg-days">
+            <div class="mg-cell" style="flex:14"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="with-dimmed" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Все, завершённые — приглушённо</h3>
+      <p>Завершённые — серые блоки. Отменённые — красный контур. Видна история, понятно почему ячейка «была занята».</p>
+      <div class="mini-grid">
+        <div class="mg-row">
+          <div class="mg-room">201</div>
+          <div class="mg-days">
+            <div class="mg-cell" style="flex:2;position:relative"><div class="block done-dim" style="left:0;right:0">Нурм.</div></div>
+            <div class="mg-cell" style="flex:1"></div>
+            <div class="mg-cell" style="flex:3;position:relative"><div class="block confirmed" style="left:0;right:0">Алиев</div></div>
+            <div class="mg-cell" style="flex:2"></div>
+            <div class="mg-cell" style="flex:2;position:relative"><div class="block canceled-dim" style="left:0;right:0">Отм.</div></div>
+            <div class="mg-cell" style="flex:4"></div>
+          </div>
+        </div>
+        <div class="mg-row">
+          <div class="mg-room">202</div>
+          <div class="mg-days">
+            <div class="mg-cell" style="flex:2"></div>
+            <div class="mg-cell" style="flex:5;position:relative"><div class="block checked" style="left:0;right:0">Жаксыбеков</div></div>
+            <div class="mg-cell" style="flex:7"></div>
+          </div>
+        </div>
+        <div class="mg-row">
+          <div class="mg-room">203</div>
+          <div class="mg-days">
+            <div class="mg-cell" style="flex:3;position:relative"><div class="block done-dim" style="left:0;right:0">Смаг.</div></div>
+            <div class="mg-cell" style="flex:11"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="filter-toggle" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Фильтр по статусу</h3>
+      <p>В тулбаре чекбоксы или мультиселект по статусам. Пользователь сам решает что видеть. Гибко, но чуть сложнее интерфейс.</p>
+    </div>
+  </div>
+</div>
