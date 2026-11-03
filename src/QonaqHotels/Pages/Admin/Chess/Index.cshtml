@@ -1,0 +1,75 @@
+@page
+@model IndexModel
+@using QonaqHotels.Pages.Admin.Chess
+@{ ViewData["Title"] = "Шахматка"; }
+
+@{
+    var allStatuses = new[] { "новая", "подтверждена", "заселён", "завершена", "отменена" };
+    var statusLabels = new Dictionary<string, string>
+    {
+        ["новая"]        = "Новые",
+        ["подтверждена"] = "Подтверждённые",
+        ["заселён"]      = "Заселённые",
+        ["завершена"]    = "Завершённые",
+        ["отменена"]     = "Отменённые"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Шахматка</h4>
+</div>
+
+<form id="chess-filter" class="chess-toolbar">
+    <div class="chess-toolbar-row">
+        <select name="hotelId" class="form-select form-select-sm chess-hotel-select">
+            @foreach (var h in Model.Hotels)
+            {
+                if (h.Value == Model.DefaultHotelId.ToString())
+                {
+                    <option value="@h.Value" selected>@h.Label</option>
+                }
+                else
+                {
+                    <option value="@h.Value">@h.Label</option>
+                }
+            }
+        </select>
+
+        <input type="hidden" id="chess-date-from" name="dateFrom"
+               value="@Model.Grid.WindowStart.ToString("yyyy-MM-dd")" />
+
+        <div class="chess-nav">
+            <button type="button" id="chess-prev" class="btn btn-outline-secondary btn-sm">← 14 дн</button>
+            <span id="chess-period-label" class="chess-period"></span>
+            <button type="button" id="chess-next" class="btn btn-outline-secondary btn-sm">14 дн →</button>
+            <button type="button" id="chess-today" class="btn btn-sm" style="background:var(--c-accent);color:#fff;border:none">Сегодня</button>
+        </div>
+    </div>
+
+    <div class="chess-toolbar-row chess-statuses">
+        <span class="chess-statuses-label">Статусы:</span>
+        @foreach (var s in allStatuses)
+        {
+            var isActive = Model.ActiveStatuses.Contains(s);
+            <label class="chess-status-check">
+                <input type="checkbox" name="statuses" value="@s" @(isActive ? "checked" : "") />
+                <span class="chess-status-dot" data-status="@s"></span>
+                @statusLabels[s]
+            </label>
+        }
+    </div>
+</form>
+
+<div id="chess-action-bar" style="display:none">
+    <span id="chess-sel-label"></span>
+    <a id="chess-sel-create" href="#" class="btn btn-primary btn-sm" style="display:none">Создать бронь</a>
+    <button type="button" id="chess-sel-clear" class="btn btn-outline-secondary btn-sm">✕</button>
+</div>
+
+<div id="chess-grid">
+    <partial name="_Grid" model="Model.Grid" />
+</div>
+
+@section Scripts {
+    <script src="~/js/admin-chess.js" asp-append-version="true"></script>
+}

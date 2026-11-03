@@ -6,7 +6,8 @@
 <div class="row"><div class="col-md-6">
 <form method="post">
     <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <input type="hidden" asp-for="HotelId" />
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <div class="mb-3">
         <label class="form-label">Гость</label>
         <input type="text" class="form-control" value="@Model.GuestName" disabled />
@@ -22,6 +23,25 @@
     <div class="mb-3">
         <label asp-for="CheckOutPlan" class="form-label">Дата выезда</label>
         <input asp-for="CheckOutPlan" type="date" class="form-control" />
+        <span asp-validation-for="CheckOutPlan" class="text-danger small"></span>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Номер <span class="text-muted small">(необязательно)</span></label>
+        <select name="RoomId" id="room-select" class="form-select">
+            <option value="">— не назначен —</option>
+            @foreach (var rm in Model.AvailableRooms)
+            {
+                if (Model.AssignedRoomId.HasValue && rm.Value == Model.AssignedRoomId.Value.ToString())
+                {
+                    <option value="@rm.Value" selected>@rm.Label</option>
+                }
+                else
+                {
+                    <option value="@rm.Value">@rm.Label</option>
+                }
+            }
+        </select>
+        <div class="form-text" id="room-hint"></div>
     </div>
     <div class="mb-3">
         <label asp-for="Source" class="form-label">Источник</label>
@@ -46,6 +66,7 @@
     <div class="mb-3" id="cancelBlock" style="display:none">
         <label asp-for="CancelReason" class="form-label">Причина отмены</label>
         <textarea asp-for="CancelReason" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="CancelReason" class="text-danger small"></span>
     </div>
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
@@ -71,5 +92,49 @@
     var revalidate = v.validateDateRange(checkIn, checkOut, true);
     revalidate();
     v.bindSubmitGate(form, [revalidate]);
+})();
+</script>
+
+<script>
+(function() {
+    var pageId   = @Model.Id;
+    var hotelId  = @Model.HotelId;
+    var checkIn  = document.getElementById('CheckInPlan');
+    var checkOut = document.getElementById('CheckOutPlan');
+    var roomSel  = document.getElementById('room-select');
+    var roomHint = document.getElementById('room-hint');
+
+    function setRooms(rooms) {
+        var current = roomSel.value;
+        while (roomSel.options.length > 1) roomSel.remove(1);
+        rooms.forEach(function(r) {
+            var opt = document.createElement('option');
+            opt.value = r.value;
+            opt.textContent = r.label;
+            if (r.value === current) opt.selected = true;
+            roomSel.appendChild(opt);
+        });
+    }
+
+    function updateRooms() {
+        var dateFrom = checkIn.value;
+        var dateTo   = checkOut.value;
+        if (!dateFrom || !dateTo || dateTo <= dateFrom) {
+            roomHint.textContent = 'Проверьте даты';
+            return;
+        }
+        roomHint.textContent = 'Загрузка…';
+        fetch('/Admin/Bookings/Edit/' + pageId + '?handler=AvailableRooms&hotelId=' + hotelId +
+              '&dateFrom=' + dateFrom + '&dateTo=' + dateTo)
+            .then(function(r) { return r.json(); })
+            .then(function(rooms) {
+                setRooms(rooms);
+                roomHint.textContent = rooms.length === 0 ? 'Нет свободных номеров на выбранный период' : '';
+            })
+            .catch(function() { roomHint.textContent = ''; });
+    }
+
+    checkIn.addEventListener('change',  updateRooms);
+    checkOut.addEventListener('change', updateRooms);
 })();
 </script>

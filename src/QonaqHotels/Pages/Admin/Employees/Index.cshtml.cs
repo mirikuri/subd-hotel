@@ -28,10 +28,10 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        using var conn = _db.Open();
+        await using var conn = await _db.OpenAsync();
         Employees = await LoadEmployees(conn, null, null, null, null, null, null);
-        var hotels    = await LoadOptions(conn, "SELECT id, name FROM hotels ORDER BY name");
-        var positions = await LoadOptions(conn, "SELECT id, name FROM positions ORDER BY name");
+        var hotels    = await AdminLists.OptionsAsync(conn, AdminLists.Hotels);
+        var positions = await AdminLists.OptionsAsync(conn, AdminLists.Positions);
         FilterBar = new FilterBarModel
         {
             FormId = "employees-filter",
@@ -52,23 +52,26 @@ public class IndexModel : PageModel
         string? q, int? hotel, int? position, string? status,
         DateOnly? hireDateFrom, DateOnly? hireDateTo)
     {
-        using var conn = _db.Open();
+        await using var conn = await _db.OpenAsync();
         var rows = await LoadEmployees(conn, q, hotel, position, status, hireDateFrom, hireDateTo);
         return Partial("_EmployeesRows", rows);
     }
 
+    // Восстановить уволенного: сотрудник и его учётка — в одной транзакции
     public async Task<IActionResult> OnPostRehireAsync(int id)
     {
-        using var conn = _db.Open();
-        using var emp = new NpgsqlCommand(
-            "UPDATE employees SET dismissal_date = NULL WHERE id = @id", conn);
-        emp.Parameters.AddWithValue("id", id);
-        await emp.ExecuteNonQueryAsync();
-        using var usr = new NpgsqlCommand(
-            "UPDATE users SET is_active = true, locked_until = NULL, failed_attempts = 0 " +
-            "WHERE employee_id = @id", conn);
-        usr.Parameters.AddWithValue("id", id);
-        await usr.ExecuteNonQueryAsync();
+        await using var conn = await _db.OpenAsync();
+        await using var tx = await conn.BeginTransactionAsync();
+
+        await using (var emp = new NpgsqlCommand(
+            "UPDATE employees SET dismissal_date = NULL WHERE id = @id", conn, tx))
+        {
+            emp.Parameters.AddWithValue("id", id);
+            if (await emp.ExecuteNonQueryAsync() == 0) return NotFound();
+        }
+
+        await EmployeeAccounts.EnableAsync(conn, tx, id);
+        await tx.CommitAsync();
         return RedirectToPage();
     }
 
@@ -77,7 +80,7 @@ public class IndexModel : PageModel
         DateOnly? hireDateFrom, DateOnly? hireDateTo)
     {
         var safeQ = q is null ? null : "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
-        using var cmd = new NpgsqlCommand(
+        await using var cmd = new NpgsqlCommand(
             "SELECT e.id, e.full_name, h.name, p.name, e.hire_date, e.dismissal_date " +
             "FROM employees e " +
             "JOIN hotels h ON h.id = e.hotel_id " +
@@ -100,7 +103,7 @@ public class IndexModel : PageModel
         cmd.Parameters.AddWithValue("hireDateTo",   (object?)hireDateTo   ?? DBNull.Value);
 
         var rows = new List<EmployeeRow>();
-        using var r = await cmd.ExecuteReaderAsync();
+        await using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
         {
             rows.Add(new EmployeeRow
@@ -114,15 +117,5 @@ public class IndexModel : PageModel
             });
         }
         return rows;
-    }
-
-    private static async Task<List<(string Value, string Label)>> LoadOptions(
-        NpgsqlConnection conn, string sql)
-    {
-        var list = new List<(string Value, string Label)>();
-        using var cmd = new NpgsqlCommand(sql, conn);
-        using var r = await cmd.ExecuteReaderAsync();
-        while (await r.ReadAsync()) list.Add((r.GetInt32(0).ToString(), r.GetString(1)));
-        return list;
     }
 }

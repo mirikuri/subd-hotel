@@ -91,6 +91,16 @@
                     <span asp-validation-for="Register.Password" class="text-danger" style="font-size:.8rem"></span>
                 </div>
                 <div class="form-group">
+                    <label asp-for="Register.ConfirmPassword">Подтвердите пароль</label>
+                    <div class="password-wrapper">
+                        <input asp-for="Register.ConfirmPassword" type="password" autocomplete="new-password" />
+                        <button type="button" class="btn-eye" data-toggle-password aria-label="Показать пароль">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Register.ConfirmPassword" class="text-danger" style="font-size:.8rem"></span>
+                </div>
+                <div class="form-group">
                     <label asp-for="Register.DocumentNumber">Номер документа</label>
                     <input asp-for="Register.DocumentNumber" type="text" />
                     <span asp-validation-for="Register.DocumentNumber" class="text-danger" style="font-size:.8rem"></span>

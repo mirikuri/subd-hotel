@@ -1,0 +1,83 @@
+@using QonaqHotels.Pages.Admin.Chess
+@model ChessGrid
+
+@{
+    var today     = DateOnly.FromDateTime(DateTime.Today);
+    var dayNames  = new[] { "Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб" };
+    int? prevFloor = null;
+    var firstRow   = true;
+}
+
+<div class="chess-grid-wrap">
+<table class="chess-table">
+<thead>
+<tr>
+    <th class="chess-room-cell">Номер</th>
+    @for (int d = 0; d < 14; d++)
+    {
+        var day      = Model.WindowStart.AddDays(d);
+        var isToday  = day == today;
+        var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+        <th class="chess-day-th @(isToday ? "chess-today-th" : "") @(isWeekend ? "chess-weekend-th" : "")">
+            <span class="chess-day-num">@day.Day</span>
+            <span class="chess-day-name">@dayNames[(int)day.DayOfWeek]</span>
+        </th>
+    }
+</tr>
+</thead>
+<tbody>
+@foreach (var room in Model.Rooms)
+{
+    if (firstRow || room.Floor != prevFloor)
+    {
+        firstRow  = false;
+        prevFloor = room.Floor;
+        <tr class="chess-floor-header"><td colspan="15">@(room.Floor is null ? "Этаж не указан" : $"Этаж {room.Floor}")</td></tr>
+    }
+    <tr>
+        <td class="chess-room-cell">
+            @room.RoomNumber
+            <div class="chess-room-type">@room.TypeName</div>
+        </td>
+        @{
+            int i = 0;
+            while (i < 14)
+            {
+                var day     = Model.WindowStart.AddDays(i);
+                var booking = room.Bookings.FirstOrDefault(b => b.DateFrom <= day && b.DateTo > day);
+
+                if (booking is not null)
+                {
+                    var effStart = booking.DateFrom < Model.WindowStart ? Model.WindowStart : booking.DateFrom;
+                    var effEnd   = booking.DateTo   > Model.WindowEnd   ? Model.WindowEnd   : booking.DateTo;
+                    var span     = effEnd.DayNumber - effStart.DayNumber;
+
+                    <td colspan="@span"
+                        class="chess-booking"
+                        data-status="@booking.Status"
+                        title="@booking.GuestName · @booking.DateFrom.ToString("dd.MM") – @booking.DateTo.ToString("dd.MM") (@booking.Status)"
+                        onclick="location.href='/Admin/Bookings/Edit/@booking.BookingId'">@(span >= 3 ? booking.GuestName : span == 2 ? booking.GuestName.Split(' ')[0] : "")</td>
+
+                    i += span;
+                }
+                else
+                {
+                    var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                    var isTodayCol = day == today;
+                    <td class="chess-empty @(isTodayCol ? "chess-today-col" : "") @(isWeekend ? "chess-weekend" : "")"
+                        data-room-id="@room.RoomId"
+                        data-room-num="@room.RoomNumber"
+                        data-date="@day.ToString("yyyy-MM-dd")"></td>
+                    i++;
+                }
+            }
+        }
+    </tr>
+}
+@if (!Model.Rooms.Any())
+{
+    <tr><td colspan="15" class="chess-empty-msg">Нет номеров</td></tr>
+}
+</tbody>
+</table>
+</div>

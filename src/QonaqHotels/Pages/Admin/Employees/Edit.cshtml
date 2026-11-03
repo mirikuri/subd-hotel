@@ -6,14 +6,18 @@
 <div class="row"><div class="col-md-6">
 <form method="post">
     <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <div class="mb-3">
         <label asp-for="FullName" class="form-label">ФИО</label>
         <input asp-for="FullName" class="form-control" required />
+        <span asp-validation-for="FullName" class="text-danger small"></span>
+        <div class="form-text">Минимум 2 символа</div>
     </div>
     <div class="mb-3">
         <label asp-for="Phone" class="form-label">Телефон</label>
         <input asp-for="Phone" class="form-control" />
+        <span asp-validation-for="Phone" class="text-danger small"></span>
+        <div class="form-text">Формат: +XXXXXXXXXXX (11–12 цифр после +)</div>
     </div>
     <div class="mb-3">
         <label asp-for="HotelId" class="form-label">Отель</label>
@@ -26,6 +30,8 @@
     <div class="mb-3">
         <label asp-for="HireDate" class="form-label">Дата приёма</label>
         <input asp-for="HireDate" type="date" class="form-control" />
+        <span asp-validation-for="HireDate" class="text-danger small"></span>
+        <div class="form-text">Не более чем на 30 дней вперёд</div>
     </div>
     <div class="mb-3">
         <div class="form-check">
@@ -66,6 +72,7 @@
     var validators = [
         function() { return v.validateName(nameInput); },
         function() { return v.validatePhone(phoneInput); },
+        function() { return v.validateHireDate(hireInput); },
         function() { return revalidateDismissal ? revalidateDismissal() : true; }
     ];
     v.bindSubmitGate(form, validators);

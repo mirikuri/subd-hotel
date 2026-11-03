@@ -15,5 +15,9 @@ appsettings.*.json
 # NixOS
 result
 
-# SDD workspace (superpowers internal)
-.superpowers/
+
+
+# Оригиналы фото — сайт использует только .webp; исходники в репо не нужны
+src/QonaqHotels/wwwroot/img/*.jpg
+src/QonaqHotels/wwwroot/img/*.png
+src/QonaqHotels/wwwroot/img/*.jpeg

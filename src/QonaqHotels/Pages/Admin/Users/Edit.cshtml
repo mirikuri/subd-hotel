@@ -6,7 +6,7 @@
 <div class="row"><div class="col-md-6">
 <form method="post">
     <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <div class="mb-3">
         <label class="form-label">Сотрудник</label>
         <input type="text" class="form-control" value="@Model.EmployeeName" disabled />
@@ -21,12 +21,12 @@
             <option value="админ">админ</option>
             <option value="ресепшен">ресепшен</option>
             <option value="бухгалтер">бухгалтер</option>
-            <option value="управляющий арендой">управляющий арендой</option>
         </select>
     </div>
     <div class="mb-3">
         <label asp-for="NewPassword" class="form-label">Новый пароль <small class="text-muted">(оставьте пустым, чтобы не менять)</small></label>
         <input asp-for="NewPassword" type="password" class="form-control" />
+        <span asp-validation-for="NewPassword" class="text-danger small"></span>
     </div>
     <div class="mb-3 form-check">
         <input asp-for="IsActive" type="checkbox" class="form-check-input" />
@@ -36,3 +36,15 @@
     <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
 </form>
 </div></div>
+
+<script>
+(function() {
+    var v = window.adminValidation;
+    var form = document.querySelector('form');
+    var passwordInput = form.querySelector('#NewPassword');
+    var validators = [
+        function() { return v.validatePassword(passwordInput); }
+    ];
+    v.bindSubmitGate(form, validators);
+})();
+</script>

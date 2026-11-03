@@ -6,27 +6,32 @@
 <div class="row"><div class="col-md-6">
 <form method="post">
     <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <div class="mb-3">
         <label asp-for="FullName" class="form-label">ФИО</label>
         <input asp-for="FullName" class="form-control" required />
+        <span asp-validation-for="FullName" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="DocumentNumber" class="form-label">Номер документа</label>
         <input asp-for="DocumentNumber" class="form-control" required />
+        <span asp-validation-for="DocumentNumber" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="BirthDate" class="form-label">Дата рождения</label>
         <input asp-for="BirthDate" type="date" class="form-control"
                value="@(Model.BirthDate?.ToString("yyyy-MM-dd") ?? "")" />
+        <span asp-validation-for="BirthDate" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Phone" class="form-label">Телефон</label>
         <input asp-for="Phone" class="form-control" />
+        <span asp-validation-for="Phone" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Email" class="form-label">Email</label>
         <input asp-for="Email" type="email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="CountryId" class="form-label">Страна</label>
@@ -57,7 +62,8 @@
 
     var validators = [
         function() { return v.validateName(nameInput); },
-        function() { return v.validatePhone(phoneInput); }
+        function() { return v.validatePhone(phoneInput); },
+        function() { return v.validateBirthDate(birthInput); }
     ];
     v.bindSubmitGate(form, validators);
 })();

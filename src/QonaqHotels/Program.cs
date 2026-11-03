@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using QonaqHotels.Data;
 using QonaqHotels.Models;
 using QonaqHotels.Services;
-using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +11,8 @@ builder.Services.AddRazorPages(options => {
     options.Conventions.AuthorizeFolder("/Admin");
 });
 
-// EF Core + PostgreSQL
-builder.Services.AddDbContext<HotelDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Database connection factory
+builder.Services.AddScoped<Db>();
 
 // Login services
 builder.Services.AddScoped<LoginService>();
@@ -39,25 +35,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 // Role policies
 builder.Services.AddAuthorization(options => {
-    options.AddPolicy("RequireReceptionist", p => p.RequireRole("ресепшен", "админ"));
-    options.AddPolicy("RequireAdmin",        p => p.RequireRole("админ"));
+    options.AddPolicy("RequireReceptionist", p => p.RequireRole(Roles.Reception, Roles.Admin));
+    options.AddPolicy("RequireAdmin",        p => p.RequireRole(Roles.Admin));
 });
-
-// Rate limiter: max 10 login POSTs per minute per IP
-builder.Services.AddRateLimiter(o =>
-    o.AddFixedWindowLimiter("login", opts => {
-        opts.Window               = TimeSpan.FromMinutes(1);
-        opts.PermitLimit          = 10;
-        opts.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opts.QueueLimit           = 0;
-    }));
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope()) {
-    var db     = scope.ServiceProvider.GetRequiredService<HotelDbContext>();
+    var db     = scope.ServiceProvider.GetRequiredService<Db>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await Seeder.SeedAsync(db, logger);
+    var hasher = scope.ServiceProvider.GetRequiredService<PasswordHasher<User>>();
+    await Seeder.SeedAsync(db, hasher, logger);
 }
 
 if (!app.Environment.IsDevelopment()) {
@@ -80,7 +68,6 @@ app.Use(async (ctx, next) => {
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();

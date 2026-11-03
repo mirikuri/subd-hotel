@@ -4,10 +4,7 @@
 @foreach (var b in Model)
 {
     <tr>
-        <td>
-            @b.GuestName
-            <div class="text-muted small">#@b.Id</div>
-        </td>
+        <td>@b.GuestName</td>
         <td>@b.HotelName</td>
         <td>@b.CheckInPlan.ToString("dd.MM.yyyy")</td>
         <td>@b.CheckOutPlan.ToString("dd.MM.yyyy")</td>

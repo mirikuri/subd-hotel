@@ -5,7 +5,7 @@
 <h4>Добавить пользователя</h4>
 <div class="row"><div class="col-md-6">
 <form method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <div class="mb-3">
         <label asp-for="EmployeeId" class="form-label">Сотрудник</label>
         <select asp-for="EmployeeId" asp-items="Model.Employees" class="form-select">
@@ -15,10 +15,13 @@
     <div class="mb-3">
         <label asp-for="Login" class="form-label">Логин</label>
         <input asp-for="Login" class="form-control" required />
+        <span asp-validation-for="Login" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Password" class="form-label">Пароль</label>
         <input asp-for="Password" type="password" class="form-control" required />
+        <span asp-validation-for="Password" class="text-danger small"></span>
+        <div class="form-text">Минимум 8 символов, одна заглавная буква, одна цифра</div>
     </div>
     <div class="mb-3">
         <label asp-for="Role" class="form-label">Роль</label>
@@ -26,10 +29,21 @@
             <option value="админ">админ</option>
             <option value="ресепшен" selected>ресепшен</option>
             <option value="бухгалтер">бухгалтер</option>
-            <option value="управляющий арендой">управляющий арендой</option>
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
 </form>
 </div></div>
+
+<script>
+(function() {
+    var v = window.adminValidation;
+    var form = document.querySelector('form');
+    var passwordInput = form.querySelector('#Password');
+    var validators = [
+        function() { return v.validateRequiredPassword(passwordInput); }
+    ];
+    v.bindSubmitGate(form, validators);
+})();
+</script>

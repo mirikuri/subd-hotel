@@ -104,7 +104,7 @@
                     <div class="card-body">
                         <div class="stars">@string.Concat(Enumerable.Repeat("★", h.Stars))@string.Concat(Enumerable.Repeat("☆", 5 - h.Stars))</div>
                         <h3>@h.Name</h3>
-                        <p><i class="bi bi-geo-alt"></i> @h.City.Name, @h.Address</p>
+                        <p><i class="bi bi-geo-alt"></i> @h.CityName, @h.Address</p>
                         @if (h.Phone != null) {
                             <p><a href="tel:@h.Phone">@h.Phone</a></p>
                         }

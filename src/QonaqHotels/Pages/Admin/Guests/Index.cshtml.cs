@@ -28,9 +28,9 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        using var conn = _db.Open();
+        await using var conn = await _db.OpenAsync();
         Guests = await LoadGuests(conn, null, null, null);
-        var countries = await LoadCountryOptions(conn);
+        var countries = await AdminLists.OptionsAsync(conn, AdminLists.Countries);
         FilterBar = new FilterBarModel
         {
             FormId = "guests-filter",
@@ -46,7 +46,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnGetSearchAsync(string? q, int? country, string? active)
     {
-        using var conn = _db.Open();
+        await using var conn = await _db.OpenAsync();
         var rows = await LoadGuests(conn, q, country, active);
         return Partial("_GuestsRows", rows);
     }
@@ -70,7 +70,7 @@ public class IndexModel : PageModel
         cmd.Parameters.AddWithValue("active",  (object?)active  ?? DBNull.Value);
 
         var rows = new List<GuestRow>();
-        using var r = await cmd.ExecuteReaderAsync();
+        await using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
         {
             rows.Add(new GuestRow
@@ -84,14 +84,5 @@ public class IndexModel : PageModel
             });
         }
         return rows;
-    }
-
-    private static async Task<List<(string Value, string Label)>> LoadCountryOptions(NpgsqlConnection conn)
-    {
-        var list = new List<(string Value, string Label)>();
-        using var cmd = new NpgsqlCommand("SELECT id, name FROM countries ORDER BY name", conn);
-        using var r = await cmd.ExecuteReaderAsync();
-        while (await r.ReadAsync()) list.Add((r.GetInt32(0).ToString(), r.GetString(1)));
-        return list;
     }
 }

@@ -74,7 +74,8 @@ CREATE TABLE rates (
 -- позиции оклад и ставка (moved above employees to fix FK ordering bug)
 CREATE TABLE positions (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name         varchar(80) NOT NULL,
+    name         varchar(80) NOT NULL UNIQUE,
+    role         varchar(30) NOT NULL DEFAULT 'ресепшен',
     base_salary  numeric(10,2),
     hourly_rate  numeric(8,2)
 );
@@ -114,6 +115,10 @@ CREATE TABLE guests (
     registered_at    timestamptz NOT NULL DEFAULT now()
 );
 
+-- Вход ищет логин без учёта регистра (lower(login) = lower(@login)),
+-- поэтому и уникальность — без учёта регистра: «Ivanov» и «ivanov» не могут сосуществовать
+CREATE UNIQUE INDEX guests_login_lower_key ON guests (lower(login));
+
 -- Карты программы лояльности
 CREATE TABLE loyalty_cards (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -133,7 +138,7 @@ CREATE TABLE bookings (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     guest_id         int NOT NULL REFERENCES guests(id) ON DELETE RESTRICT,
     hotel_id         int NOT NULL REFERENCES hotels(id) ON DELETE RESTRICT,
-    booking_date     timestamp NOT NULL DEFAULT now(),
+    booking_date     timestamptz NOT NULL DEFAULT now(),
     check_in_plan    date NOT NULL,
     check_out_plan   date NOT NULL,
     status           varchar(20) NOT NULL DEFAULT 'новая'
@@ -204,137 +209,6 @@ CREATE TABLE service_orders (
 
 
 
--- аренда
-
--- типы помещ
-CREATE TABLE unit_types (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name  varchar(60) NOT NULL
-);
-
--- коммерч помещения
-CREATE TABLE commercial_units (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    hotel_id      int NOT NULL REFERENCES hotels(id) ON DELETE RESTRICT,
-    unit_type_id  int NOT NULL REFERENCES unit_types(id) ON DELETE RESTRICT,
-    unit_number   varchar(10) NOT NULL,
-    floor         smallint,
-    area_sqm      numeric(8,2) NOT NULL CHECK (area_sqm > 0),
-    status        varchar(20) NOT NULL DEFAULT 'свободно'
-                  CHECK (status IN ('свободно', 'сдано', 'ремонт')),
-    UNIQUE (hotel_id, unit_number)
-);
-
--- Арендаторы
-CREATE TABLE tenants (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    company_name   varchar(150) NOT NULL,
-    bin            varchar(12) NOT NULL UNIQUE,
-    legal_address  varchar(250),
-    director_name  varchar(150),
-    phone          varchar(20),
-    email          varchar(120)
-);
-
--- Договоры аренды
-CREATE TABLE lease_contracts (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    tenant_id        int NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
-    contract_number  varchar(30) NOT NULL UNIQUE,
-    date_start       date NOT NULL,
-    date_end         date NOT NULL,
-    rate_per_sqm     numeric(10,2) NOT NULL CHECK (rate_per_sqm > 0),
-    deposit          numeric(12,2) DEFAULT 0,
-    status           varchar(20) NOT NULL DEFAULT 'действует'
-                     CHECK (status IN ('действует', 'продлён', 'расторгнут', 'истёк')),
-    CHECK (date_end > date_start)
-);
-
--- Какие помещения входят в договор и на какой срок
-CREATE TABLE contract_units (
-    contract_id  int NOT NULL REFERENCES lease_contracts(id) ON DELETE CASCADE,
-    unit_id      int NOT NULL REFERENCES commercial_units(id) ON DELETE RESTRICT,
-    date_from    date NOT NULL,
-    date_to      date NOT NULL,
-    is_active    boolean NOT NULL DEFAULT true,
-    PRIMARY KEY (contract_id, unit_id),
-    CHECK (date_to >= date_from),
-    EXCLUDE USING gist (
-        unit_id WITH =,
-        daterange(date_from, date_to, '[]') WITH &&
-    ) WHERE (is_active)
-);
-
--- Счётчики в помещениях
-CREATE TABLE utility_meters (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    unit_id        int NOT NULL REFERENCES commercial_units(id) ON DELETE CASCADE,
-    meter_type     varchar(20) NOT NULL CHECK (meter_type IN ('электричество', 'вода', 'тепло')),
-    serial_number  varchar(40) NOT NULL UNIQUE
-);
-
--- Показания счётчиков по датам
-CREATE TABLE meter_readings (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    meter_id      int NOT NULL REFERENCES utility_meters(id) ON DELETE CASCADE,
-    reading_date  date NOT NULL,
-    value         numeric(12,3) NOT NULL CHECK (value >= 0),
-    UNIQUE (meter_id, reading_date)
-);
-
--- Тарифы на коммунальные услуги
-CREATE TABLE utility_tariffs (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    meter_type      varchar(20) NOT NULL CHECK (meter_type IN ('электричество', 'вода', 'тепло')),
-    price_per_unit  numeric(10,4) NOT NULL CHECK (price_per_unit > 0),
-    valid_from      date NOT NULL
-);
-
-
-
--- финансы
-
--- Счетаза проживание или за аренду
-CREATE TABLE invoices (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    invoice_number   varchar(30) NOT NULL UNIQUE,
-    invoice_type     varchar(20) NOT NULL CHECK (invoice_type IN ('проживание', 'аренда')),
-    booking_id       int REFERENCES bookings(id) ON DELETE RESTRICT,
-    contract_id      int REFERENCES lease_contracts(id) ON DELETE RESTRICT,
-    issue_date       date NOT NULL DEFAULT CURRENT_DATE,
-    due_date         date NOT NULL,
-    total_amount     numeric(12,2) NOT NULL DEFAULT 0,
-    status           varchar(20) NOT NULL DEFAULT 'выставлен'
-                     CHECK (status IN ('выставлен', 'частично оплачен', 'оплачен', 'просрочен')),
-    CHECK (
-        (booking_id IS NOT NULL AND contract_id IS NULL)
-        OR (booking_id IS NULL AND contract_id IS NOT NULL)
-    )
-);
-
-CREATE TABLE invoice_items (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    invoice_id   int NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    item_type    varchar(20) NOT NULL
-                 CHECK (item_type IN ('проживание', 'услуга', 'аренда', 'коммуналка', 'пеня')),
-    description  varchar(250),
-    quantity     numeric(10,3) NOT NULL CHECK (quantity > 0),
-    unit_price   numeric(12,4) NOT NULL CHECK (unit_price >= 0),
-    amount       numeric(12,2) NOT NULL CHECK (amount >= 0)
-);
-
-
--- по просроченным счетам
-CREATE TABLE penalties (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    invoice_id    int NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    calc_date     date NOT NULL DEFAULT CURRENT_DATE,
-    days_overdue  int NOT NULL CHECK (days_overdue >= 0),
-    amount        numeric(12,2) NOT NULL CHECK (amount >= 0)
-);
-
-
-
 -- смены зарплата
 
 -- график смен сотрудников.
@@ -354,21 +228,6 @@ CREATE TABLE shifts (
     )
 );
 
--- начисления зарплаты сотруднику за месяц
-CREATE TABLE payrolls (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id    int NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
-    period_month   date NOT NULL,
-    hours_total    numeric(6,2) NOT NULL DEFAULT 0,
-    base_amount    numeric(10,2) NOT NULL DEFAULT 0,
-    bonus          numeric(10,2) NOT NULL DEFAULT 0,
-    deduction      numeric(10,2) NOT NULL DEFAULT 0,
-    total_amount   numeric(10,2) NOT NULL DEFAULT 0,
-    payment_date   date,
-    UNIQUE (employee_id, period_month)
-);
-
-
 
 --доступы
 
@@ -379,12 +238,15 @@ CREATE TABLE users (
     login           varchar(50) NOT NULL UNIQUE,
     password_hash   varchar(255) NOT NULL,
     role            varchar(30) NOT NULL
-                    CHECK (role IN ('админ', 'ресепшен', 'бухгалтер', 'управляющий арендой')),
+                    CHECK (role IN ('админ', 'ресепшен', 'бухгалтер')),
     is_active       boolean NOT NULL DEFAULT true,
     failed_attempts int NOT NULL DEFAULT 0,
     locked_until    timestamptz,
     last_login_at   timestamptz
 );
+
+-- Логин уникален без учёта регистра — так его ищет LoginService
+CREATE UNIQUE INDEX users_login_lower_key ON users (lower(login));
 
 --логи
 CREATE TABLE audit_log (

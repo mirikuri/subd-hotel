@@ -7,8 +7,16 @@
         <div class="col-auto">
             @if (f.Type == "select")
             {
-                <select name="@f.Name" class="form-select form-select-sm">
+                <select name="@f.Name"
+                        class="form-select form-select-sm"
+                        data-depends-on="@f.DependsOn"
+                        data-options-handler="@f.OptionsHandler"
+                        data-options-parameter="@f.OptionsParameter"
+                        data-placeholder="@f.Placeholder"
+                        disabled="@(f.DependsOn != null ? "disabled" : null)">
+
                     <option value="">@f.Placeholder</option>
+
                     @foreach (var opt in f.Options)
                     {
                         <option value="@opt.Value">@opt.Label</option>
@@ -17,19 +25,36 @@
             }
             else if (f.Type == "date")
             {
-                <label for="@f.Name" class="form-label form-label-sm mb-0 text-muted small">@f.Placeholder</label>
-                <input type="date" id="@f.Name" name="@f.Name" class="form-control form-control-sm" />
+                <label for="@f.Name"
+                       class="form-label form-label-sm mb-0 text-muted small">
+                    @f.Placeholder
+                </label>
+
+                <input type="date"
+                       id="@f.Name"
+                       name="@f.Name"
+                       class="form-control form-control-sm" />
             }
             else
             {
-                <input type="text" name="@f.Name" class="form-control form-control-sm"
-                       placeholder="@f.Placeholder" autocomplete="off" />
+                <input type="text"
+                       name="@f.Name"
+                       class="form-control form-control-sm"
+                       placeholder="@f.Placeholder"
+                       autocomplete="off" />
             }
         </div>
     }
+
     <div class="col-auto">
-        <button type="submit" class="btn btn-primary btn-sm">Найти</button>
-        <button type="button" id="@(Model.FormId)-reset"
-                class="btn btn-outline-secondary btn-sm ms-1">Сбросить</button>
+        <button type="submit" class="btn btn-primary btn-sm">
+            Найти
+        </button>
+
+        <button type="button"
+                id="@(Model.FormId)-reset"
+                class="btn btn-outline-secondary btn-sm ms-1">
+            Сбросить
+        </button>
     </div>
 </form>

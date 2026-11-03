@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.RateLimiting;
 using QonaqHotels.Services;
 using System.Security.Claims;
 
@@ -40,7 +39,6 @@ public class LoginModel : PageModel
         return Page();
     }
 
-    [EnableRateLimiting("login")]
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         if (!ModelState.IsValid)
@@ -59,9 +57,9 @@ public class LoginModel : PageModel
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name,           user.Employee.FullName),
+            new(ClaimTypes.Name,           user.EmployeeName),
             new(ClaimTypes.Role,           user.Role),
-            new("hotel_id",                user.Employee.HotelId.ToString())
+            new("hotel_id",                user.EmployeeHotelId.ToString())
         };
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);

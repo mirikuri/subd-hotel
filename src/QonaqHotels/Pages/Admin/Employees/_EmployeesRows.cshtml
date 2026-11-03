@@ -4,10 +4,7 @@
 @foreach (var e in Model)
 {
     <tr>
-        <td>
-            @e.FullName
-            <div class="text-muted small">#@e.Id</div>
-        </td>
+        <td>@e.FullName</td>
         <td>@e.HotelName</td>
         <td>@e.PositionName</td>
         <td>@e.HireDate.ToString("dd.MM.yyyy")</td>

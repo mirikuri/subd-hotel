@@ -1,11 +1,15 @@
 @page
 @model CreateModel
 @{ ViewData["Title"] = "Добавить бронь"; }
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
 <h4>Добавить бронь</h4>
 <div class="row"><div class="col-md-6">
 <form method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <div class="mb-3">
         <label asp-for="GuestId" class="form-label">Гость</label>
         <select asp-for="GuestId" asp-items="Model.Guests" class="form-select">
@@ -20,11 +24,30 @@
     </div>
     <div class="mb-3">
         <label asp-for="CheckInPlan" class="form-label">Дата заезда</label>
-        <input asp-for="CheckInPlan" type="date" class="form-control" />
+        <input asp-for="CheckInPlan" type="text" class="form-control" />
     </div>
     <div class="mb-3">
         <label asp-for="CheckOutPlan" class="form-label">Дата выезда</label>
-        <input asp-for="CheckOutPlan" type="date" class="form-control" />
+        <input asp-for="CheckOutPlan" type="text" class="form-control" />
+        <span asp-validation-for="CheckOutPlan" class="text-danger small"></span>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Номер <span class="text-muted small">(необязательно)</span></label>
+        <select name="RoomId" id="room-select" class="form-select">
+            <option value="">— не назначен —</option>
+            @foreach (var rm in Model.AvailableRooms)
+            {
+                if (Model.RoomId.HasValue && rm.Value == Model.RoomId.Value.ToString())
+                {
+                    <option value="@rm.Value" selected>@rm.Label</option>
+                }
+                else
+                {
+                    <option value="@rm.Value">@rm.Label</option>
+                }
+            }
+        </select>
+        <div class="form-text" id="room-hint">@(Model.AvailableRooms.Count == 0 ? "Выберите отель и даты для поиска свободных номеров" : "")</div>
     </div>
     <div class="mb-3">
         <label asp-for="Source" class="form-label">Источник</label>
@@ -50,5 +73,207 @@
     var revalidate = v.validateDateRange(checkIn, checkOut, false);
     revalidate();
     v.bindSubmitGate(form, [revalidate]);
+})();
+</script>
+
+<script>
+(function () {
+    var hotelSel = document.getElementById('HotelId');
+    var checkIn = document.getElementById('CheckInPlan');
+    var checkOut = document.getElementById('CheckOutPlan');
+    var roomSel = document.getElementById('room-select');
+    var roomHint = document.getElementById('room-hint');
+
+    var preselect = '@(Model.RoomId?.ToString() ?? "")';
+    var occupiedRanges = [];
+
+    // Бронирование: от сегодня до одного года вперёд.
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    var maxDate = new Date(today);
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+
+    function formatDate(date) {
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + d;
+    }
+
+    function isOccupied(date) {
+        return occupiedRanges.some(function (r) {
+            return date >= r.from && date < r.to;
+        });
+    }
+
+    function checkoutConflicts(date) {
+        if (!checkIn.value || date <= checkIn.value)
+            return true;
+
+        // Проверяем пересечение проживания [заезд, выезд)
+        return occupiedRanges.some(function (r) {
+            return r.from < date && r.to > checkIn.value;
+        });
+    }
+
+    // Инициализация календаря заезда.
+    var checkInPicker = flatpickr(checkIn, {
+        locale: 'ru',
+        dateFormat: 'Y-m-d',
+        minDate: today,
+        maxDate: maxDate,
+        disableMobile: true,
+
+        disable: [
+            function (date) {
+                return isOccupied(formatDate(date));
+            }
+        ],
+
+        onChange: function () {
+            updateCheckoutLimits();
+            if (checkOut.value && checkOut.value > checkIn.value) {
+                updateRooms();
+            }
+            revalidate();
+        }
+    });
+
+    // Инициализация календаря выезда.
+    var checkOutPicker = flatpickr(checkOut, {
+        locale: 'ru',
+        dateFormat: 'Y-m-d',
+        minDate: today,
+        maxDate: maxDate,
+        disableMobile: true,
+
+        disable: [
+            function (date) {
+                return checkoutConflicts(formatDate(date));
+            }
+        ],
+
+        onChange: function () {
+            updateRooms();
+            revalidate();
+        }
+    });
+
+    function updateCheckoutLimits() {
+        if (!checkIn.value) {
+            checkOutPicker.set('minDate', today);
+            return;
+        }
+
+        var min = new Date(checkIn.value + 'T00:00:00');
+        min.setDate(min.getDate() + 1);
+
+        checkOutPicker.set('minDate', min);
+
+        if (checkOut.value && checkOut.value <= checkIn.value) {
+            checkOutPicker.clear(false);
+        }
+    }
+
+    function refreshOccupiedDates() {
+        var roomId = roomSel.value;
+
+        if (!roomId) {
+            occupiedRanges = [];
+            checkInPicker.redraw();
+            checkOutPicker.redraw();
+            return;
+        }
+
+        fetch('/Admin/Bookings/Create?handler=OccupiedDates&roomId='
+            + encodeURIComponent(roomId))
+            .then(function (r) {
+                if (!r.ok) throw new Error('Ошибка загрузки дат');
+                return r.json();
+            })
+            .then(function (ranges) {
+                occupiedRanges = ranges;
+
+                checkInPicker.redraw();
+                checkOutPicker.redraw();
+
+                // Если выбранная дата стала занятой — сбрасываем её.
+                if (checkIn.value && isOccupied(checkIn.value)) {
+                    checkInPicker.clear(false);
+                }
+
+                if (checkOut.value && checkoutConflicts(checkOut.value)) {
+                    checkOutPicker.clear(false);
+                }
+            })
+            .catch(function (e) {
+                console.error(e);
+                roomHint.textContent = 'Не удалось загрузить занятые даты';
+            });
+    }
+
+    function setRooms(rooms) {
+        var current = roomSel.value;
+
+        while (roomSel.options.length > 1)
+            roomSel.remove(1);
+
+        rooms.forEach(function (r) {
+            var opt = document.createElement('option');
+            opt.value = r.value;
+            opt.textContent = r.label;
+
+            if (r.value === current ||
+                (current === '' && r.value === preselect)) {
+                opt.selected = true;
+            }
+
+            roomSel.appendChild(opt);
+        });
+    }
+
+    function updateRooms() {
+        var hotelId = hotelSel.value;
+        var dateFrom = checkIn.value;
+        var dateTo = checkOut.value;
+
+        if (!hotelId || !dateFrom || !dateTo || dateTo <= dateFrom) {
+            roomHint.textContent =
+                'Выберите отель и корректные даты проживания';
+            return;
+        }
+
+        roomHint.textContent = 'Загрузка…';
+
+        fetch('/Admin/Bookings/Create?handler=AvailableRooms&hotelId='
+            + encodeURIComponent(hotelId)
+            + '&dateFrom=' + encodeURIComponent(dateFrom)
+            + '&dateTo=' + encodeURIComponent(dateTo))
+            .then(function (r) {
+                if (!r.ok) throw new Error('Ошибка загрузки номеров');
+                return r.json();
+            })
+            .then(function (rooms) {
+                setRooms(rooms);
+
+                roomHint.textContent = rooms.length === 0
+                    ? 'Нет свободных номеров на выбранный период'
+                    : '';
+
+                refreshOccupiedDates();
+            })
+            .catch(function (e) {
+                console.error(e);
+                roomHint.textContent = 'Ошибка загрузки номеров';
+            });
+    }
+
+    hotelSel.addEventListener('change', updateRooms);
+    roomSel.addEventListener('change', refreshOccupiedDates);
+
+    updateCheckoutLimits();
+    refreshOccupiedDates();
+
 })();
 </script>

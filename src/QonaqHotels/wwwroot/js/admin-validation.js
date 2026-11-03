@@ -19,8 +19,8 @@
     function validatePhone(input) {
         const v = input.value.trim();
         if (v === '') { clearError(input); return true; }
-        if (/^\+[0-9]{7,15}$/.test(v)) { clearError(input); return true; }
-        showError(input, 'Формат: +XXXXXXXXXXX (7–15 цифр после +)');
+        if (/^\+[0-9]{11,12}$/.test(v)) { clearError(input); return true; }
+        showError(input, 'Формат: +XXXXXXXXXXX (11–12 цифр после +)');
         return false;
     }
 
@@ -29,6 +29,41 @@
         if (v.length >= 2) { clearError(input); return true; }
         showError(input, 'Минимум 2 символа');
         return false;
+    }
+
+    function validatePassword(input) {
+        const v = input.value;
+        if (!v) { clearError(input); return true; }
+        if (v.length < 8) { showError(input, 'Минимум 8 символов'); return false; }
+        if (!/[A-Z]/.test(v)) { showError(input, 'Нужна минимум одна заглавная буква'); return false; }
+        if (!/[0-9]/.test(v)) { showError(input, 'Нужна минимум одна цифра'); return false; }
+        clearError(input);
+        return true;
+    }
+
+    function validateRequiredPassword(input) {
+        if (!input.value) { showError(input, 'Укажите пароль'); return false; }
+        return validatePassword(input);
+    }
+
+    function validateBirthDate(input) {
+        if (!input || !input.value) { clearError(input); return true; }
+        if (input.validity.rangeOverflow) {
+            showError(input, 'Дата рождения не может быть в будущем');
+            return false;
+        }
+        clearError(input);
+        return true;
+    }
+
+    function validateHireDate(input) {
+        if (!input.value) { clearError(input); return true; }
+        if (input.validity.rangeOverflow) {
+            showError(input, 'Дата приёма не может быть более чем на 30 дней в будущем');
+            return false;
+        }
+        clearError(input);
+        return true;
     }
 
     function validateDateRange(startInput, endInput, allowPastStart) {
@@ -82,16 +117,31 @@
 
     function bindSubmitGate(form, validators) {
         const btn = form.querySelector('[type=submit]');
+
         function check() {
-            const ok = validators.every(function(v) { return v(); });
+            var results = validators.map(function(v) { return v(); });
+            var ok = results.every(Boolean);
             btn.disabled = !ok;
+            return ok;
         }
+
         form.querySelectorAll('input, select, textarea').forEach(function(el) {
             el.addEventListener('input', check);
             el.addEventListener('change', check);
         });
-        check();
+
+        // Safety net for Enter-key submit when button is enabled
+        form.addEventListener('submit', function(e) {
+            if (!check()) e.preventDefault();
+        });
+
+        // Do NOT call check() immediately — button starts enabled, no errors on load
     }
 
-    exports.adminValidation = { validatePhone, validateName, validateDateRange, validateDismissalDate, bindSubmitGate };
+    exports.adminValidation = {
+        validatePhone, validateName, validatePassword, validateRequiredPassword,
+        validateBirthDate, validateHireDate,
+        validateDateRange, validateDismissalDate,
+        bindSubmitGate
+    };
 })(window);

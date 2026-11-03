@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.RateLimiting;
 using QonaqHotels.Services;
 using System.Security.Claims;
 
@@ -42,8 +41,14 @@ public class RegisterLoginModel : PageModel
         public string LoginName { get; set; } = "";
 
         [Required(ErrorMessage = "Введите пароль")]
-        [MinLength(6, ErrorMessage = "Пароль от 6 символов")]
+        [MinLength(8, ErrorMessage = "Пароль от 8 символов")]
+        [RegularExpression(@"^(?=.*[A-Z])(?=.*\d).+$",
+            ErrorMessage = "Пароль должен содержать хотя бы одну заглавную букву и цифру")]
         public string Password { get; set; } = "";
+
+        [Required(ErrorMessage = "Подтвердите пароль")]
+        [Compare(nameof(Password), ErrorMessage = "Пароли не совпадают")]
+        public string ConfirmPassword { get; set; } = "";
 
         [Required(ErrorMessage = "Укажите ФИО")]
         [MaxLength(150)]
@@ -68,7 +73,6 @@ public class RegisterLoginModel : PageModel
         return Page();
     }
 
-    [EnableRateLimiting("login")]
     public async Task<IActionResult> OnPostLoginAsync()
     {
         ActiveTab = "login";
@@ -89,7 +93,6 @@ public class RegisterLoginModel : PageModel
         return Redirect("/");
     }
 
-    [EnableRateLimiting("login")]
     public async Task<IActionResult> OnPostRegisterAsync()
     {
         ActiveTab = "register";
@@ -110,6 +113,7 @@ public class RegisterLoginModel : PageModel
         {
             ErrorMessage = result.ErrorMessage;
             Register.Password = "";
+            Register.ConfirmPassword = "";
             return Page();
         }
 

@@ -33,7 +33,7 @@
                     <button type="submit" class="btn btn-outline-success btn-sm">Включить</button>
                 </form>
             }
-            else
+            else if (u.Role != "админ")
             {
                 <a asp-page="Delete" asp-route-id="@u.Id" class="btn btn-outline-danger btn-sm">Отключить</a>
             }

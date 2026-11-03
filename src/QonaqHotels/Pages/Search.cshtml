@@ -1,0 +1,15 @@
+@page
+@model SearchModel
+@{
+    ViewData["Title"] = "Поиск номеров";
+}
+<section class="section">
+    <div class="section-inner" style="text-align:center;padding:4rem 2rem">
+        <h1>Поиск номеров</h1>
+        @if (Model.DateError != null) {
+            <p style="color:var(--c-error)">@Model.DateError</p>
+        }
+        <p style="color:#666">Поиск номеров скоро заработает.</p>
+        <a href="/" class="btn-primary">На главную</a>
+    </div>
+</section>

@@ -1,81 +1,77 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using QonaqHotels.Data;
 using QonaqHotels.Models;
 using QonaqHotels.Services;
 
 namespace QonaqHotels.Tests;
 
-public class LoginServiceTests
+public class LoginServiceTests : IAsyncLifetime
 {
-    private static HotelDbContext CreateContext(string name)
+    private readonly Db _db;
+    private readonly string _prefix;
+    private int _empId;
+    private int _userId;
+
+    public LoginServiceTests()
     {
-        var opts = new DbContextOptionsBuilder<HotelDbContext>()
-            .UseInMemoryDatabase(name).Options;
-        return new HotelDbContext(opts);
+        _db     = TestDb.Create();
+        _prefix = $"t{Guid.NewGuid():N}"[..9] + "_";
     }
 
-    private static async Task<User> SeedUser(
-        HotelDbContext db,
-        string login = "admin",
-        string password = "Pass123!",
-        bool isActive = true,
-        DateOnly? dismissalDate = null,
-        DateTime? lockedUntil = null,
-        int failedAttempts = 0)
+    public async Task InitializeAsync()
     {
-        var country  = new Country  { Name = "Казахстан" };
-        var city     = new City     { Name = "Астана", Country = country };
-        var hotel    = new Hotel    { Name = "H", City = city, Address = "a", Stars = 3 };
-        var position = new Position { Name = "администратор" };
-        db.Countries.Add(country); db.Cities.Add(city);
-        db.Hotels.Add(hotel); db.Positions.Add(position);
-        await db.SaveChangesAsync();
+        using var conn = _db.Open();
 
-        var emp = new Employee {
-            FullName = "Тест Тестов", HotelId = hotel.Id, PositionId = position.Id,
-            HireDate = new DateOnly(2024, 1, 1), DismissalDate = dismissalDate
-        };
-        db.Employees.Add(emp);
-        await db.SaveChangesAsync();
+        using var emp = new NpgsqlCommand(
+            "INSERT INTO employees (hotel_id, position_id, full_name, hire_date) " +
+            "VALUES (1, 1, @n, '2024-01-01') RETURNING id", conn);
+        emp.Parameters.AddWithValue("n", _prefix + "Тест Тестов");
+        _empId = (int)(await emp.ExecuteScalarAsync())!;
 
         var hasher = new PasswordHasher<User>();
-        var user = new User {
-            Login = login, Role = "админ", IsActive = isActive,
-            EmployeeId = emp.Id, FailedAttempts = failedAttempts,
-            LockedUntil = lockedUntil
-        };
-        user.PasswordHash = hasher.HashPassword(user, password);
-        db.Users.Add(user);
-        await db.SaveChangesAsync();
-        return user;
+        var tmpUser = new User();
+        var hash = hasher.HashPassword(tmpUser, "Pass123!");
+
+        using var usr = new NpgsqlCommand(
+            "INSERT INTO users (employee_id, login, password_hash, role, is_active, failed_attempts) " +
+            "VALUES (@e, @l, @h, 'админ', true, 0) RETURNING id", conn);
+        usr.Parameters.AddWithValue("e", _empId);
+        usr.Parameters.AddWithValue("l", _prefix + "admin");
+        usr.Parameters.AddWithValue("h", hash);
+        _userId = (int)(await usr.ExecuteScalarAsync())!;
     }
 
-    // Review Focus #1: case-insensitive login
+    public async Task DisposeAsync()
+    {
+        using var conn = _db.Open();
+        using var cmd  = new NpgsqlCommand(
+            "DELETE FROM users WHERE id = @u; DELETE FROM employees WHERE id = @e", conn);
+        cmd.Parameters.AddWithValue("u", _userId);
+        cmd.Parameters.AddWithValue("e", _empId);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private LoginService NewService() => new(_db, new PasswordHasher<User>());
+    private string Login => _prefix + "admin";
+
     [Theory]
     [InlineData("admin")]
     [InlineData("ADMIN")]
     [InlineData("Admin")]
-    public async Task AttemptLogin_CaseInsensitive_Succeeds(string loginInput)
+    public async Task AttemptLogin_CaseInsensitive_Succeeds(string suffix)
     {
-        using var db = CreateContext($"case-{loginInput}");
-        await SeedUser(db, login: "admin", password: "Pass123!");
-        var svc = new LoginService(db, new PasswordHasher<User>());
-
-        var result = await svc.AttemptLoginAsync(loginInput, "Pass123!");
-
+        var svc    = NewService();
+        var input  = _prefix + suffix;
+        var result = await svc.AttemptLoginAsync(input, "Pass123!");
         Assert.Equal(LoginResult.Success, result.Outcome);
     }
 
-    // Review Focus #2: non-existent user returns generic error
     [Fact]
     public async Task AttemptLogin_UserNotFound_ReturnsGenericError()
     {
-        using var db  = CreateContext("not-found");
-        var svc = new LoginService(db, new PasswordHasher<User>());
-
-        var result = await svc.AttemptLoginAsync("nobody", "any");
-
+        var svc    = NewService();
+        var result = await svc.AttemptLoginAsync(_prefix + "nobody", "any");
         Assert.Equal(LoginResult.InvalidCredentials, result.Outcome);
         Assert.Equal("Неверный логин или пароль", result.ErrorMessage);
     }
@@ -83,41 +79,56 @@ public class LoginServiceTests
     [Fact]
     public async Task AttemptLogin_WrongPassword_IncrementsCounter()
     {
-        using var db = CreateContext("incr-counter");
-        var user = await SeedUser(db);
-        var svc  = new LoginService(db, new PasswordHasher<User>());
+        var svc = NewService();
+        await svc.AttemptLoginAsync(Login, "wrong");
 
-        await svc.AttemptLoginAsync("admin", "wrong");
-
-        var updated = await db.Users.FindAsync(user.Id);
-        Assert.Equal(1, updated!.FailedAttempts);
+        using var conn = _db.Open();
+        using var cmd  = new NpgsqlCommand(
+            "SELECT failed_attempts FROM users WHERE id = @id", conn);
+        cmd.Parameters.AddWithValue("id", _userId);
+        Assert.Equal(1, (int)(await cmd.ExecuteScalarAsync())!);
     }
 
     [Fact]
     public async Task AttemptLogin_FiveWrongPasswords_LocksAccount()
     {
-        using var db = CreateContext("lockout");
-        var user = await SeedUser(db, failedAttempts: 4);
-        var svc  = new LoginService(db, new PasswordHasher<User>());
+        var svc = NewService();
+        using (var conn = _db.Open())
+        {
+            using var cmd = new NpgsqlCommand(
+                "UPDATE users SET failed_attempts = 4 WHERE id = @id", conn);
+            cmd.Parameters.AddWithValue("id", _userId);
+            await cmd.ExecuteNonQueryAsync();
+        }
 
-        var result = await svc.AttemptLoginAsync("admin", "wrong");
-
+        var result = await svc.AttemptLoginAsync(Login, "wrong");
         Assert.Equal(LoginResult.InvalidCredentials, result.Outcome);
-        var updated = await db.Users.FindAsync(user.Id);
-        Assert.NotNull(updated!.LockedUntil);
-        Assert.True(updated.LockedUntil > DateTime.UtcNow);
-        Assert.Equal(0, updated.FailedAttempts);
+
+        using var c2  = _db.Open();
+        using var q   = new NpgsqlCommand(
+            "SELECT locked_until, failed_attempts FROM users WHERE id = @id", c2);
+        q.Parameters.AddWithValue("id", _userId);
+        using var r = await q.ExecuteReaderAsync();
+        await r.ReadAsync();
+        Assert.False(r.IsDBNull(0));
+        Assert.True(r.GetDateTime(0) > DateTime.UtcNow);
+        Assert.Equal(0, r.GetInt32(1));
     }
 
     [Fact]
     public async Task AttemptLogin_Locked_ReturnsLockoutError()
     {
-        using var db = CreateContext("locked");
-        await SeedUser(db, lockedUntil: DateTime.UtcNow.AddMinutes(10));
-        var svc = new LoginService(db, new PasswordHasher<User>());
+        using (var conn = _db.Open())
+        {
+            using var cmd = new NpgsqlCommand(
+                "UPDATE users SET locked_until = @lu WHERE id = @id", conn);
+            cmd.Parameters.AddWithValue("lu", DateTime.UtcNow.AddMinutes(10));
+            cmd.Parameters.AddWithValue("id", _userId);
+            await cmd.ExecuteNonQueryAsync();
+        }
 
-        var result = await svc.AttemptLoginAsync("admin", "Pass123!");
-
+        var svc    = NewService();
+        var result = await svc.AttemptLoginAsync(Login, "Pass123!");
         Assert.Equal(LoginResult.LockedOut, result.Outcome);
         Assert.NotNull(result.MinutesRemaining);
     }
@@ -125,39 +136,58 @@ public class LoginServiceTests
     [Fact]
     public async Task AttemptLogin_Inactive_ReturnsDisabledError()
     {
-        using var db = CreateContext("inactive");
-        await SeedUser(db, isActive: false);
-        var svc = new LoginService(db, new PasswordHasher<User>());
+        using (var conn = _db.Open())
+        {
+            using var cmd = new NpgsqlCommand(
+                "UPDATE users SET is_active = false WHERE id = @id", conn);
+            cmd.Parameters.AddWithValue("id", _userId);
+            await cmd.ExecuteNonQueryAsync();
+        }
 
-        var result = await svc.AttemptLoginAsync("admin", "Pass123!");
-
+        var svc    = NewService();
+        var result = await svc.AttemptLoginAsync(Login, "Pass123!");
         Assert.Equal(LoginResult.Disabled, result.Outcome);
     }
 
     [Fact]
     public async Task AttemptLogin_DismissedEmployee_ReturnsDisabledError()
     {
-        using var db = CreateContext("dismissed");
-        await SeedUser(db, dismissalDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)));
-        var svc = new LoginService(db, new PasswordHasher<User>());
+        using (var conn = _db.Open())
+        {
+            using var cmd = new NpgsqlCommand(
+                "UPDATE employees SET dismissal_date = @d WHERE id = @id", conn);
+            cmd.Parameters.AddWithValue("d", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)));
+            cmd.Parameters.AddWithValue("id", _empId);
+            await cmd.ExecuteNonQueryAsync();
+        }
 
-        var result = await svc.AttemptLoginAsync("admin", "Pass123!");
-
+        var svc    = NewService();
+        var result = await svc.AttemptLoginAsync(Login, "Pass123!");
         Assert.Equal(LoginResult.Disabled, result.Outcome);
     }
 
     [Fact]
     public async Task AttemptLogin_Success_ClearsCounterAndUpdatesLastLogin()
     {
-        using var db = CreateContext("success");
-        var user = await SeedUser(db, failedAttempts: 2);
-        var svc  = new LoginService(db, new PasswordHasher<User>());
+        using (var conn = _db.Open())
+        {
+            using var cmd = new NpgsqlCommand(
+                "UPDATE users SET failed_attempts = 2 WHERE id = @id", conn);
+            cmd.Parameters.AddWithValue("id", _userId);
+            await cmd.ExecuteNonQueryAsync();
+        }
 
-        await svc.AttemptLoginAsync("admin", "Pass123!");
+        var svc = NewService();
+        await svc.AttemptLoginAsync(Login, "Pass123!");
 
-        var updated = await db.Users.FindAsync(user.Id);
-        Assert.Equal(0, updated!.FailedAttempts);
-        Assert.Null(updated.LockedUntil);
-        Assert.NotNull(updated.LastLoginAt);
+        using var c2  = _db.Open();
+        using var q   = new NpgsqlCommand(
+            "SELECT failed_attempts, locked_until, last_login_at FROM users WHERE id = @id", c2);
+        q.Parameters.AddWithValue("id", _userId);
+        using var r = await q.ExecuteReaderAsync();
+        await r.ReadAsync();
+        Assert.Equal(0, r.GetInt32(0));
+        Assert.True(r.IsDBNull(1));
+        Assert.False(r.IsDBNull(2));
     }
 }

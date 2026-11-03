@@ -3,12 +3,13 @@
 @{ ViewData["Title"] = "Уволить сотрудника"; }
 
 <h4>Уволить сотрудника</h4>
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
 <div class="alert alert-warning">
     Сотрудник будет помечен как уволенный. Это действие можно отменить через редактирование.
 </div>
 <dl class="row">
     <dt class="col-sm-3">ФИО</dt>
-    <dd class="col-sm-9">@Model.Employee.FullName</dd>
+    <dd class="col-sm-9">@Model.EmployeeName</dd>
 </dl>
 <form method="post">
     <button type="submit" class="btn btn-danger">Уволить</button>

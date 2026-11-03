@@ -23,10 +23,10 @@ public class IndexModel : PageModel
     public List<PositionRow> Positions { get; set; } = [];
     public FilterBarModel FilterBar { get; set; } = null!;
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
-        using var conn = _db.Open();
-        Positions = LoadPositions(conn, null, null);
+        await using var conn = await _db.OpenAsync();
+        Positions = await LoadPositions(conn, null, null);
         FilterBar = new FilterBarModel
         {
             FormId = "positions-filter",
@@ -39,16 +39,16 @@ public class IndexModel : PageModel
         };
     }
 
-    public IActionResult OnGetSearch(string? q, string? role)
+    public async Task<IActionResult> OnGetSearchAsync(string? q, string? role)
     {
-        using var conn = _db.Open();
-        return Partial("_PositionsRows", LoadPositions(conn, q, role));
+        await using var conn = await _db.OpenAsync();
+        return Partial("_PositionsRows", await LoadPositions(conn, q, role));
     }
 
-    private static List<PositionRow> LoadPositions(NpgsqlConnection conn, string? q, string? role)
+    private static async Task<List<PositionRow>> LoadPositions(NpgsqlConnection conn, string? q, string? role)
     {
         var safeQ = q is null ? null : "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
-        using var cmd = new NpgsqlCommand(
+        await using var cmd = new NpgsqlCommand(
             "SELECT id, name, role FROM positions " +
             "WHERE (@q::text IS NULL OR lower(name) LIKE lower(@q) ESCAPE '\\') " +
             "  AND (@role::text IS NULL OR role = @role) " +
@@ -58,8 +58,8 @@ public class IndexModel : PageModel
         cmd.Parameters.AddWithValue("role", (object?)role  ?? DBNull.Value);
 
         var rows = new List<PositionRow>();
-        using var r = cmd.ExecuteReader();
-        while (r.Read())
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
             rows.Add(new PositionRow { Id = r.GetInt32(0), Name = r.GetString(1), Role = r.GetString(2) });
         return rows;
     }

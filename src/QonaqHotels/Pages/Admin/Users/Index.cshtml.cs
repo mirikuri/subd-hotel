@@ -30,8 +30,8 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostEnableAsync(int id)
     {
-        using var conn = _db.Open();
-        using var cmd = new NpgsqlCommand(
+        await using var conn = await _db.OpenAsync();
+        await using var cmd = new NpgsqlCommand(
             "UPDATE users SET is_active = true, locked_until = NULL, failed_attempts = 0 WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("id", id);
         await cmd.ExecuteNonQueryAsync();
@@ -40,7 +40,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        using var conn = _db.Open();
+        await using var conn = await _db.OpenAsync();
         Users = await LoadUsers(conn, null, null, null);
         FilterBar = new FilterBarModel
         {
@@ -58,7 +58,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnGetSearchAsync(string? q, string? role, string? status)
     {
-        using var conn = _db.Open();
+        await using var conn = await _db.OpenAsync();
         var rows = await LoadUsers(conn, q, role, status);
         return Partial("_UsersRows", rows);
     }
@@ -67,7 +67,7 @@ public class IndexModel : PageModel
         NpgsqlConnection conn, string? q, string? role, string? status)
     {
         var safeQ = q is null ? null : "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
-        using var cmd = new NpgsqlCommand(
+        await using var cmd = new NpgsqlCommand(
             "SELECT u.id, e.full_name, h.name, u.login, u.role, u.last_login_at, u.is_active, u.locked_until " +
             "FROM users u " +
             "JOIN employees e ON e.id = u.employee_id " +
@@ -87,7 +87,7 @@ public class IndexModel : PageModel
         cmd.Parameters.AddWithValue("status", (object?)status ?? DBNull.Value);
 
         var rows = new List<UserRow>();
-        using var r = await cmd.ExecuteReaderAsync();
+        await using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
         {
             rows.Add(new UserRow
