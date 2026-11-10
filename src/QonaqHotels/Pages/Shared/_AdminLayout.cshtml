@@ -21,13 +21,14 @@
     <aside class="admin-sidebar">
         <div class="sidebar-logo">QONAQ HOTELS</div>
         <a class="sidebar-link active" href="/admin"><i class="bi bi-house me-2"></i>Главная</a>
+        @* Пункты по ролям — те же политики, что на страницах (Program.cs) *@
+        @if (role == "админ" || role == "ресепшен") {
         <a class="sidebar-link" href="/Admin/Chess"><i class="bi bi-grid-3x3 me-2"></i>Шахматка</a>
         <a class="sidebar-link" href="/Admin/Bookings"><i class="bi bi-calendar3 me-2"></i>Брони</a>
         <a class="sidebar-link disabled" href="#"><i class="bi bi-door-open me-2"></i>Заселение<span class="soon">(скоро)</span></a>
         <a class="sidebar-link" href="/Admin/Guests"><i class="bi bi-people me-2"></i>Гости</a>
-        <a class="sidebar-link disabled" href="#"><i class="bi bi-search me-2"></i>Поиск номера<span class="soon">(скоро)</span></a>
-        <a class="sidebar-link disabled" href="#"><i class="bi bi-bag me-2"></i>Услуги<span class="soon">(скоро)</span></a>
-        <a class="sidebar-link disabled" href="#"><i class="bi bi-book me-2"></i>Справочники<span class="soon">(скоро)</span></a>
+        }
+        <a class="sidebar-link" href="/Admin/Catalogs"><i class="bi bi-book me-2"></i>Справочники</a>
         <a class="sidebar-link disabled" href="#"><i class="bi bi-bar-chart me-2"></i>Отчёты<span class="soon">(скоро)</span></a>
         @if (role == "админ") {
         <a class="sidebar-link" href="/Admin/Employees"><i class="bi bi-person-badge me-2"></i>Сотрудники</a>

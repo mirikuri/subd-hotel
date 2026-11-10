@@ -6,9 +6,10 @@ using QonaqHotels.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Razor Pages: protect all /Admin pages
+// Razor Pages: вся админка — только для сотрудников (гость сайта тоже «вошёл», но сюда не пускаем).
+// Отдельные страницы сужают доступ своими [Authorize(Policy = ...)].
 builder.Services.AddRazorPages(options => {
-    options.Conventions.AuthorizeFolder("/Admin");
+    options.Conventions.AuthorizeFolder("/Admin", "RequireStaff");
 });
 
 // Database connection factory
@@ -37,6 +38,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization(options => {
     options.AddPolicy("RequireReceptionist", p => p.RequireRole(Roles.Reception, Roles.Admin));
     options.AddPolicy("RequireAdmin",        p => p.RequireRole(Roles.Admin));
+    options.AddPolicy("RequireAccountant",   p => p.RequireRole(Roles.Accountant, Roles.Admin));
+    options.AddPolicy("RequireStaff",        p => p.RequireRole(Roles.Admin, Roles.Reception, Roles.Accountant));
+    options.AddPolicy("RequireGuest",        p => p.RequireRole(Roles.Guest));
 });
 
 var app = builder.Build();

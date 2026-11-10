@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using QonaqHotels.Models;
 using QonaqHotels.Services;
 using System.Security.Claims;
 
@@ -127,7 +128,7 @@ public class RegisterLoginModel : PageModel
         {
             new(ClaimTypes.NameIdentifier, "guest:" + guestId),
             new(ClaimTypes.Name,           fullName),
-            new(ClaimTypes.Role,           "гость")
+            new(ClaimTypes.Role,           Roles.Guest)
         };
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
