@@ -19,6 +19,21 @@ public static class Roles
     public const string Admin      = "админ";
     public const string Reception  = "ресепшен";
     public const string Accountant = "бухгалтер";
+
+    // Роль вошедшего гостя сайта (claim ставит RegisterLogin, в БД не хранится)
+    public const string Guest      = "гость";
+}
+
+// rooms.view
+public static class RoomView
+{
+    public static readonly string[] All = ["город", "парк", "двор", "горы"];
+}
+
+// room_types.bed_type
+public static class BedType
+{
+    public static readonly string[] All = ["односпальная", "двуспальная", "две односпальные", "king-size"];
 }
 
 // rooms.status

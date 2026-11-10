@@ -33,16 +33,44 @@ JOIN countries c ON c.name = v.country;
 
 -- ── Отели и номера ───────────────────────────────────────────────────────────
 
-INSERT INTO room_types (name, capacity, description) VALUES
-    ('Стандарт',    2, 'Двуспальная или две односпальные кровати, рабочий стол, душ. Для коротких поездок.'),
-    ('Комфорт',     2, 'Больше места, кресло для отдыха, кофемашина и вид на город.'),
-    ('Полулюкс',    3, 'Спальня и гостиная зона в одном пространстве, диван-кровать для третьего гостя.'),
-    ('Люкс',        2, 'Отдельная гостиная, ванна, халаты и тапочки, панорамные окна.'),
-    ('Семейный',    4, 'Две комнаты, детская кроватка по запросу, место для игр.'),
-    ('Бизнес-люкс', 3, 'Кабинет с рабочим столом, гостиная для встреч, кофемашина и минибар.');
+INSERT INTO room_types (name, capacity, description, area_m2, bed_type) VALUES
+    ('Стандарт',    2, 'Двуспальная или две односпальные кровати, рабочий стол, душ. Для коротких поездок.', 22, 'две односпальные'),
+    ('Комфорт',     2, 'Больше места, кресло для отдыха, кофемашина и вид на город.',                        28, 'двуспальная'),
+    ('Полулюкс',    3, 'Спальня и гостиная зона в одном пространстве, диван-кровать для третьего гостя.',    38, 'двуспальная'),
+    ('Люкс',        2, 'Отдельная гостиная, ванна, халаты и тапочки, панорамные окна.',                      55, 'king-size'),
+    ('Семейный',    4, 'Две комнаты, детская кроватка по запросу, место для игр.',                           48, 'две односпальные'),
+    ('Бизнес-люкс', 3, 'Кабинет с рабочим столом, гостиная для встреч, кофемашина и минибар.',               60, 'king-size');
 
-INSERT INTO hotels (name, city_id, address, stars, phone)
-SELECT v.name, c.id, v.address, v.stars::smallint, v.phone
+-- Удобства и их наличие по типам номеров
+INSERT INTO amenities (name, icon) VALUES
+    ('Wi-Fi',          'wifi'),
+    ('Кондиционер',    'snow'),
+    ('Телевизор',      'tv'),
+    ('Сейф',           'safe'),
+    ('Мини-бар',       'cup-straw'),
+    ('Кофемашина',     'cup-hot'),
+    ('Ванна',          'droplet'),
+    ('Рабочий стол',   'laptop'),
+    ('Халаты',         'person-standing-dress'),
+    ('Детская кроватка','balloon-heart');
+
+INSERT INTO room_type_amenities (room_type_id, amenity_id)
+SELECT rt.id, a.id
+FROM (VALUES
+    ('Стандарт',    ARRAY['Wi-Fi', 'Кондиционер', 'Телевизор', 'Рабочий стол']),
+    ('Комфорт',     ARRAY['Wi-Fi', 'Кондиционер', 'Телевизор', 'Сейф', 'Кофемашина']),
+    ('Полулюкс',    ARRAY['Wi-Fi', 'Кондиционер', 'Телевизор', 'Сейф', 'Кофемашина', 'Мини-бар']),
+    ('Люкс',        ARRAY['Wi-Fi', 'Кондиционер', 'Телевизор', 'Сейф', 'Мини-бар', 'Кофемашина', 'Ванна', 'Халаты']),
+    ('Семейный',    ARRAY['Wi-Fi', 'Кондиционер', 'Телевизор', 'Сейф', 'Детская кроватка']),
+    ('Бизнес-люкс', ARRAY['Wi-Fi', 'Кондиционер', 'Телевизор', 'Сейф', 'Мини-бар', 'Кофемашина', 'Рабочий стол', 'Халаты'])
+) AS v(type_name, names)
+JOIN room_types rt ON rt.name = v.type_name
+JOIN amenities a   ON a.name = ANY(v.names);
+
+INSERT INTO hotels (name, city_id, address, stars, phone, email, description)
+SELECT v.name, c.id, v.address, v.stars::smallint, v.phone,
+       lower(replace(replace(v.name, 'Qonaq ', ''), ' ', '-')) || '@qonaq-hotels.kz',
+       'Отель сети Qonaq в городе ' || v.city_name || '.'
 FROM (VALUES
     ('Qonaq Astana Center', 'Астана',  'пр. Мангилик Ел, 55', '5', '+7 700 000 00 01'),
     ('Qonaq Almaty Park',   'Алматы',  'пр. Абая, 120',        '4', '+7 700 000 00 02'),
@@ -54,8 +82,11 @@ FROM (VALUES
 JOIN cities c ON c.name = v.city_name;
 
 -- 40 номеров на каждый отель: этажи 2–5, номера 1–10, типы по кругу
-INSERT INTO rooms (hotel_id, room_type_id, room_number, floor)
-SELECT h.id, rt.id, (f * 100 + n)::text, f
+-- вид из окна: нижние этажи — двор или город, верхние — парк или горы
+INSERT INTO rooms (hotel_id, room_type_id, room_number, floor, view)
+SELECT h.id, rt.id, (f * 100 + n)::text, f,
+       CASE WHEN f <= 3 THEN CASE WHEN n % 2 = 0 THEN 'двор' ELSE 'город' END
+            ELSE             CASE WHEN n % 2 = 0 THEN 'парк' ELSE 'горы'  END END
 FROM hotels h
 CROSS JOIN generate_series(2, 5)  AS f
 CROSS JOIN generate_series(1, 10) AS n
@@ -87,7 +118,7 @@ CROSS JOIN (VALUES
     ('autumn', 'Осень',  9, 11)
 ) AS s(code, title, month_start, month_end);
 
--- Цена за ночь: базовая цена типа номера × сезонный коэффициент
+-- Цена за ночь в долларах: базовая цена типа номера × сезонный коэффициент
 INSERT INTO rates (room_type_id, season_id, price_per_night)
 SELECT rt.id, s.id,
        round(base.price * CASE split_part(s.name, ' ', 1)
@@ -95,16 +126,16 @@ SELECT rt.id, s.id,
                               WHEN 'Зима'  THEN 1.10
                               WHEN 'Весна' THEN 0.95
                               ELSE 1.00
-                          END, -2)
+                          END, 0)
 FROM seasons s
 CROSS JOIN room_types rt
 JOIN (VALUES
-    ('Стандарт',    25000),
-    ('Комфорт',     32000),
-    ('Полулюкс',    42000),
-    ('Люкс',        65000),
-    ('Семейный',    52000),
-    ('Бизнес-люкс', 80000)
+    ('Стандарт',     50),
+    ('Комфорт',      65),
+    ('Полулюкс',     85),
+    ('Люкс',        130),
+    ('Семейный',    105),
+    ('Бизнес-люкс', 160)
 ) AS base(type_name, price) ON base.type_name = rt.name;
 
 
@@ -357,19 +388,19 @@ WHERE EXISTS (
 INSERT INTO service_categories (name) VALUES
     ('Питание'), ('СПА и отдых'), ('Трансфер'), ('Прачечная');
 
--- Каждая услуга есть во всех отелях; в пятизвёздочном дороже, в трёхзвёздочном дешевле
+-- Каждая услуга есть во всех отелях, цены в долларах; в пятизвёздочном дороже, в трёхзвёздочном дешевле
 INSERT INTO services (category_id, hotel_id, name, price, unit)
 SELECT c.id, h.id, v.name,
-       round(v.price * CASE h.stars WHEN 5 THEN 1.3 WHEN 4 THEN 1.0 ELSE 0.8 END, -2),
+       round(v.price * CASE h.stars WHEN 5 THEN 1.3 WHEN 4 THEN 1.0 ELSE 0.8 END, 0),
        v.unit
 FROM (VALUES
-    ('Питание',     'Завтрак «шведский стол»', 6000,  'чел.'),
-    ('Питание',     'Ужин в ресторане',        12000, 'чел.'),
-    ('Питание',     'Доставка в номер',        2500,  'заказ'),
-    ('СПА и отдых', 'Сауна',                   8000,  'час'),
-    ('СПА и отдых', 'Массаж классический',     15000, 'сеанс'),
-    ('Трансфер',    'Трансфер из аэропорта',   9000,  'поездка'),
-    ('Прачечная',   'Стирка и глажка',         2000,  'кг')
+    ('Питание',     'Завтрак «шведский стол»', 12,    'чел.'),
+    ('Питание',     'Ужин в ресторане',        25,    'чел.'),
+    ('Питание',     'Доставка в номер',        5,     'заказ'),
+    ('СПА и отдых', 'Сауна',                   16,    'час'),
+    ('СПА и отдых', 'Массаж классический',     30,    'сеанс'),
+    ('Трансфер',    'Трансфер из аэропорта',   18,    'поездка'),
+    ('Прачечная',   'Стирка и глажка',         4,     'кг')
 ) AS v(category, name, price, unit)
 JOIN service_categories c ON c.name = v.category
 CROSS JOIN hotels h;

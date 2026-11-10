@@ -35,6 +35,15 @@ public static class DbErrors
         ["guests_login_lower_key"]     = "Этот логин уже занят.",
         ["users_employee_id_key"]      = "У этого сотрудника уже есть учётная запись.",
         ["positions_name_key"]         = "Должность с таким названием уже есть.",
+        ["hotels_name_key"]            = "Отель с таким названием уже есть.",
+        ["room_types_name_key"]        = "Тип номера с таким названием уже есть.",
+        ["amenities_name_key"]         = "Удобство с таким названием уже есть.",
+        ["service_categories_name_key"]     = "Категория с таким названием уже есть.",
+        ["rooms_hotel_id_room_number_key"]  = "Номер с таким названием в отеле уже есть.",
+        ["rates_room_type_id_season_id_key"] = "Тариф для этого типа и сезона уже есть.",
+
+        // EXCLUDE: сезоны идут без пересечений
+        ["seasons_no_overlap"] = "Сезон пересекается с другим сезоном.",
 
         // EXCLUDE: пересечение периодов
         ["booking_rooms_room_id_daterange_excl"] = "Номер уже занят на выбранные даты.",
@@ -46,6 +55,15 @@ public static class DbErrors
         ["bookings_source_check"] = "Недопустимый источник брони.",
         ["employees_check"]       = "Дата увольнения не может быть раньше даты приёма.",
         ["users_role_check"]      = "Недопустимая роль: разрешены админ, ресепшен, бухгалтер.",
+        ["room_types_area_check"]      = "Площадь должна быть больше нуля.",
+        ["room_types_bed_type_check"]  = "Недопустимый тип кровати.",
+        ["rooms_view_check"]           = "Недопустимый вид из окна.",
+        ["rooms_status_check"]         = "Недопустимый статус номера.",
+        ["rates_price_per_night_check"] = "Цена должна быть больше нуля.",
+        ["services_price_check"]       = "Цена не может быть отрицательной.",
+        ["seasons_check"]              = "Дата окончания сезона не может быть раньше начала.",
+        ["hotels_stars_check"]         = "Звёздность — от 1 до 5.",
+        ["room_types_capacity_check"]  = "Вместимость должна быть больше нуля.",
 
         // FOREIGN KEY при INSERT/UPDATE: указана несуществующая запись
         ["bookings_guest_id_fkey"]      = "Гость не найден.",

@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 
 -- номера
+-- Все денежные столбцы (rates, services, service_orders) — в долларах США.
 
 -- справочник стран
 CREATE TABLE countries (
@@ -25,7 +26,12 @@ CREATE TABLE hotels (
     city_id int NOT NULL REFERENCES cities(id) ON DELETE RESTRICT,
     address varchar(250) NOT NULL,
     stars   smallint NOT NULL CHECK (stars BETWEEN 1 AND 5),
-    phone   varchar(20)
+    phone   varchar(20),
+    email          varchar(120),
+    check_in_time  time NOT NULL DEFAULT '14:00',
+    check_out_time time NOT NULL DEFAULT '12:00',
+    description    text,
+    CONSTRAINT hotels_name_key UNIQUE (name)
 );
 
 -- справочник типов номеров
@@ -33,7 +39,25 @@ CREATE TABLE room_types (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name        varchar(80) NOT NULL,
     capacity    smallint NOT NULL CHECK (capacity > 0),
-    description text
+    description text,
+    area_m2     numeric(5,1) CONSTRAINT room_types_area_check CHECK (area_m2 > 0),
+    bed_type    varchar(30)  CONSTRAINT room_types_bed_type_check
+                CHECK (bed_type IN ('односпальная', 'двуспальная', 'две односпальные', 'king-size')),
+    CONSTRAINT room_types_name_key UNIQUE (name)
+);
+
+-- справочник удобств номера (Wi-Fi, кондиционер, ...)
+CREATE TABLE amenities (
+    id   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name varchar(60) NOT NULL CONSTRAINT amenities_name_key UNIQUE,
+    icon varchar(40)            -- имя значка Bootstrap Icons, например 'wifi'
+);
+
+-- какие удобства есть у типа номера (многие ко многим)
+CREATE TABLE room_type_amenities (
+    room_type_id int NOT NULL REFERENCES room_types(id) ON DELETE CASCADE,
+    amenity_id   int NOT NULL REFERENCES amenities(id)  ON DELETE RESTRICT,
+    PRIMARY KEY (room_type_id, amenity_id)
 );
 
 -- Конкретные номера конкретного отеля
@@ -45,6 +69,8 @@ CREATE TABLE rooms (
     floor         smallint,
     status        varchar(20) NOT NULL DEFAULT 'свободен'
                   CHECK (status IN ('свободен', 'занят', 'уборка', 'ремонт')),
+    view          varchar(20) CONSTRAINT rooms_view_check
+                  CHECK (view IN ('город', 'парк', 'двор', 'горы')),
     UNIQUE (hotel_id, room_number)
 );
 
@@ -55,7 +81,8 @@ CREATE TABLE seasons (
     date_start date NOT NULL,
     date_end   date NOT NULL,
     CHECK (date_end >= date_start),
-    EXCLUDE USING gist (daterange(date_start, date_end, '[]') WITH &&)
+    CONSTRAINT seasons_no_overlap
+        EXCLUDE USING gist (daterange(date_start, date_end, '[]') WITH &&)
 );
 
 -- цена за тип номера в сезон
@@ -66,6 +93,7 @@ CREATE TABLE rates (
     price_per_night  numeric(10,2) NOT NULL CHECK (price_per_night > 0),
     UNIQUE (room_type_id, season_id)
 );
+COMMENT ON COLUMN rates.price_per_night IS 'USD';
 
 
 
@@ -146,6 +174,7 @@ CREATE TABLE bookings (
     source           varchar(30)
                      CHECK (source IN ('сайт', 'телефон', 'агрегатор', 'стойка')),
     cancel_reason    text,
+    guest_comment    varchar(500),   -- пожелания гостя из заявки с сайта
     CHECK (check_out_plan > check_in_plan)
 );
 
@@ -182,7 +211,7 @@ CREATE TABLE stays (
 
 CREATE TABLE service_categories (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name  varchar(60) NOT NULL
+    name  varchar(60) NOT NULL CONSTRAINT service_categories_name_key UNIQUE
 );
 
 -- Доп услуги конкретного отеля
@@ -192,8 +221,11 @@ CREATE TABLE services (
     hotel_id     int NOT NULL REFERENCES hotels(id) ON DELETE RESTRICT,
     name         varchar(120) NOT NULL,
     price        numeric(10,2) NOT NULL CHECK (price >= 0),
-    unit         varchar(20)
+    unit         varchar(20),
+    description  text,
+    is_active    boolean NOT NULL DEFAULT true   -- false: услуга снята с продажи
 );
+COMMENT ON COLUMN services.price IS 'USD';
 
 -- Услуги в рамках брони
 CREATE TABLE service_orders (
@@ -205,6 +237,7 @@ CREATE TABLE service_orders (
     quantity         numeric(8,2) NOT NULL CHECK (quantity > 0),
     price_at_order   numeric(10,2) NOT NULL CHECK (price_at_order >= 0)
 );
+COMMENT ON COLUMN service_orders.price_at_order IS 'USD';
 
 
 

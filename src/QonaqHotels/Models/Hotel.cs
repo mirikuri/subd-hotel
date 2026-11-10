@@ -9,6 +9,10 @@ public class Hotel
     public string Address { get; set; } = "";
     public short Stars { get; set; }
     public string? Phone { get; set; }
+    public string? Email { get; set; }
+    public TimeOnly CheckInTime { get; set; } = new(14, 0);
+    public TimeOnly CheckOutTime { get; set; } = new(12, 0);
+    public string? Description { get; set; }
     // заполняется JOIN-запросом, не хранится в БД
     public string CityName { get; set; } = "";
 }

@@ -9,4 +9,5 @@ public class Room
     public string RoomNumber { get; set; } = "";
     public short? Floor { get; set; }
     public string Status { get; set; } = "";
+    public string? View { get; set; }
 }
