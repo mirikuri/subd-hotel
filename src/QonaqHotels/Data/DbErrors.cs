@@ -18,6 +18,10 @@ public static class DbErrors
     public const string CheckViolation      = "23514";
     public const string ExclusionViolation  = "23P01";
 
+    // Взаимная блокировка: два INSERT под одним EXCLUDE-ограничением могут ждать друг друга,
+    // и PostgreSQL обрывает один из них этой ошибкой вместо 23P01. По смыслу — тот же конфликт.
+    public const string DeadlockDetected    = "40P01";
+
     // Нарушение ограничения — это ошибка данных, а не сбой: показываем её в форме.
     // Остальные ошибки (нет соединения, синтаксис SQL) пусть падают как обычно.
     public static bool IsConstraintViolation(PostgresException ex) =>

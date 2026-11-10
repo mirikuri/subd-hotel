@@ -18,6 +18,7 @@ builder.Services.AddScoped<Db>();
 // Login services
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<GuestAuthService>();
+builder.Services.AddScoped<SiteBookingService>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 builder.Services.AddScoped<PasswordHasher<Guest>>();
 
