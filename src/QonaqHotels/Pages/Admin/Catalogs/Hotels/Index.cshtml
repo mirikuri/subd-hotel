@@ -1,0 +1,33 @@
+@page
+@model QonaqHotels.Pages.Admin.Catalogs.Hotels.IndexModel
+@{ ViewData["Title"] = "Отели"; var isAdmin = User.IsInRole("админ"); }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><a href="/Admin/Catalogs" class="text-decoration-none">Справочники</a> / Отели</h4>
+    @if (isAdmin) { <a asp-page="Edit" class="btn btn-primary btn-sm">+ Добавить</a> }
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><input name="q" value="@Model.Q" class="form-control form-control-sm" placeholder="Название или город…" /></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm">Найти</button></div>
+</form>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light">
+        <tr><th>Название</th><th>Город</th><th>★</th><th>Адрес</th><th>Телефон</th><th>Заезд / выезд</th><th>Номеров</th><th></th></tr>
+    </thead>
+    <tbody>
+    @foreach (var h in Model.Rows) {
+        <tr>
+            <td>@h.Name</td><td>@h.City</td><td>@h.Stars</td><td>@h.Address</td><td>@h.Phone</td>
+            <td>@h.CheckIn.ToString("HH:mm") / @h.CheckOut.ToString("HH:mm")</td><td>@h.Rooms</td>
+            <td>
+                @if (isAdmin) {
+                    <a asp-page="Edit" asp-route-id="@h.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+                    <a asp-page="Delete" asp-route-id="@h.Id" class="btn btn-outline-danger btn-sm">Удалить</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

@@ -1,0 +1,9 @@
+@model QonaqHotels.Pages.Admin.Catalogs.DeleteRowModel
+@* Общая разметка страниц Delete справочников *@
+<h4>Удалить @Model.What</h4>
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+<div class="alert alert-warning">Удалить @Model.What «@Model.Title»? Это действие необратимо.</div>
+<form method="post">
+    <button type="submit" class="btn btn-danger">Удалить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>

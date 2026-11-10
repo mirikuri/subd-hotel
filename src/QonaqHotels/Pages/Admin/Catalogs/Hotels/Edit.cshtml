@@ -1,0 +1,25 @@
+@page "{id:int?}"
+@model QonaqHotels.Pages.Admin.Catalogs.Hotels.EditModel
+@{ ViewData["Title"] = Model.Id is null ? "Добавить отель" : "Изменить отель"; }
+
+<h4>@ViewData["Title"]</h4>
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    <div class="mb-3"><label class="form-label">Название</label><input asp-for="Name" class="form-control" required /></div>
+    <div class="mb-3"><label class="form-label">Город</label><select asp-for="CityId" asp-items="Model.Cities" class="form-select"></select></div>
+    <div class="mb-3"><label class="form-label">Адрес</label><input asp-for="Address" class="form-control" required /></div>
+    <div class="row">
+        <div class="col mb-3"><label class="form-label">Звёзд</label><input asp-for="Stars" type="number" min="1" max="5" class="form-control" /></div>
+        <div class="col mb-3"><label class="form-label">Заезд с</label><input asp-for="CheckInTime" type="time" class="form-control" /></div>
+        <div class="col mb-3"><label class="form-label">Выезд до</label><input asp-for="CheckOutTime" type="time" class="form-control" /></div>
+    </div>
+    <div class="row">
+        <div class="col mb-3"><label class="form-label">Телефон</label><input asp-for="Phone" class="form-control" /></div>
+        <div class="col mb-3"><label class="form-label">E-mail</label><input asp-for="Email" class="form-control" /></div>
+    </div>
+    <div class="mb-3"><label class="form-label">Описание</label><textarea asp-for="Description" class="form-control" rows="3"></textarea></div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>

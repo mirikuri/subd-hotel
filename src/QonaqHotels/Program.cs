@@ -12,6 +12,10 @@ builder.Services.AddRazorPages(options => {
     options.Conventions.AuthorizeFolder("/Admin", "RequireStaff");
 });
 
+// Кириллица в HTML как есть, а не &#x...; (экранирование < > & " сохраняется)
+builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o =>
+    o.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All));
+
 // Database connection factory
 builder.Services.AddScoped<Db>();
 

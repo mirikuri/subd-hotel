@@ -1,0 +1,21 @@
+@page
+@{ ViewData["Title"] = "Справочники"; }
+
+<h4 class="mb-3">Справочники</h4>
+<div class="row g-3">
+    @foreach (var (url, icon, title, text) in new[] {
+        ("/Admin/Catalogs/Hotels",    "building",  "Отели",             "Адреса, звёзды, время заезда и выезда"),
+        ("/Admin/Catalogs/RoomTypes", "door-open", "Типы номеров",      "Вместимость, площадь, кровать, удобства"),
+        ("/Admin/Catalogs/Rooms",     "key",       "Номера",            "Номера отелей, этажи, вид, статус"),
+        ("/Admin/Catalogs/Seasons",   "calendar",  "Сезоны и тарифы",   "Периоды и цены за ночь, $"),
+        ("/Admin/Catalogs/Services",  "bag",       "Услуги",            "Услуги отелей и их цены, $") }) {
+        <div class="col-md-4">
+            <a href="@url" class="card h-100 text-decoration-none text-reset">
+                <div class="card-body">
+                    <h5><i class="bi bi-@icon me-2"></i>@title</h5>
+                    <p class="text-muted mb-0">@text</p>
+                </div>
+            </a>
+        </div>
+    }
+</div>

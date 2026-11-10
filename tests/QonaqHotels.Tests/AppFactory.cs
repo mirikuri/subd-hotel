@@ -80,3 +80,44 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, AppFactory.Scheme)));
     }
 }
+
+public static class FormPosting
+{
+    public static string Token(string html) =>
+        System.Text.RegularExpressions.Regex
+            .Match(html, "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"").Groups[1].Value;
+
+    // Открывает страницу (как браузер), берёт антифорджери-токен из её формы и отправляет POST
+    public static async Task<HttpResponseMessage> PostFormAsync(
+        this HttpClient client, string url, Dictionary<string, string> fields, string? postUrl = null)
+    {
+        var html = await client.GetStringAsync(url);
+        fields["__RequestVerificationToken"] = Token(html);
+        return await client.PostAsync(postUrl ?? url, new FormUrlEncodedContent(fields));
+    }
+
+    // POST без токена — для проверки 403: авторизация срабатывает раньше проверки токена
+    public static Task<HttpResponseMessage> PostRawAsync(this HttpClient client, string url,
+                                                         Dictionary<string, string>? fields = null) =>
+        client.PostAsync(url, new FormUrlEncodedContent(fields ?? []));
+}
+
+// Короткие запросы к gosti_test из тестов
+public static class Sql
+{
+    public static async Task<object?> ScalarAsync(string sql, params (string, object)[] ps)
+    {
+        await using var conn = await TestDb.Create().OpenAsync();
+        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
+        foreach (var (n, v) in ps) cmd.Parameters.AddWithValue(n, v);
+        return await cmd.ExecuteScalarAsync();
+    }
+
+    public static async Task ExecAsync(string sql, params (string, object)[] ps)
+    {
+        await using var conn = await TestDb.Create().OpenAsync();
+        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
+        foreach (var (n, v) in ps) cmd.Parameters.AddWithValue(n, v);
+        await cmd.ExecuteNonQueryAsync();
+    }
+}
