@@ -34,6 +34,16 @@ public class IndexPageTests
     }
 
     [Fact]
+    public async Task OnGetAsync_MinPrices_StandardFrom48()
+    {
+        var model = new IndexModel(CreateDb(), MockEnv().Object);
+        await model.OnGetAsync();
+        var standard = model.RoomTypes.Single(rt => rt.Name == "Стандарт");
+        Assert.Equal(48m, model.MinPrices[standard.Id]);
+        Assert.NotEmpty(standard.Amenities);
+    }
+
+    [Fact]
     public async Task OnGetAsync_RoomTypesMaxSix()
     {
         var model = new IndexModel(CreateDb(), MockEnv().Object);

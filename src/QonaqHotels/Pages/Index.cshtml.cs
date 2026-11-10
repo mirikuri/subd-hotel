@@ -22,6 +22,8 @@ public class IndexModel : PageModel
     public int HotelCount  { get; private set; }
     public int RoomCount   { get; private set; }
     public int CityCount   { get; private set; }
+    // «от $N за ночь» по типу номера (RoomSearch.MinNightlyRatesAsync)
+    public Dictionary<int, decimal> MinPrices { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
@@ -51,7 +53,7 @@ public class IndexModel : PageModel
 
         // Загружаем типы номеров (первые 6)
         using (var cmd = new NpgsqlCommand(
-            "SELECT id, name, capacity, description FROM room_types ORDER BY id LIMIT 6", conn))
+            "SELECT id, name, capacity, description, area_m2 FROM room_types ORDER BY id LIMIT 6", conn))
         using (var r = await cmd.ExecuteReaderAsync())
         {
             while (await r.ReadAsync())
@@ -61,14 +63,34 @@ public class IndexModel : PageModel
                     Id          = r.GetInt32(0),
                     Name        = r.GetString(1),
                     Capacity    = r.GetInt16(2),
-                    Description = r.IsDBNull(3) ? null : r.GetString(3)
+                    Description = r.IsDBNull(3) ? null : r.GetString(3),
+                    AreaM2      = r.IsDBNull(4) ? null : r.GetDecimal(4)
                 });
             }
         }
 
+        // Удобства показанных типов номеров
+        using (var cmd = new NpgsqlCommand(
+            "SELECT rta.room_type_id, a.id, a.name, a.icon " +
+            "FROM room_type_amenities rta JOIN amenities a ON a.id = rta.amenity_id " +
+            "WHERE rta.room_type_id = ANY(@ids) ORDER BY a.name", conn))
+        {
+            cmd.Parameters.AddWithValue("ids", RoomTypes.Select(rt => rt.Id).ToArray());
+            using var r = await cmd.ExecuteReaderAsync();
+            var byId = RoomTypes.ToDictionary(rt => rt.Id);
+            while (await r.ReadAsync())
+                byId[r.GetInt32(0)].Amenities.Add(new Amenity
+                {
+                    Id = r.GetInt32(1), Name = r.GetString(2), Icon = r.IsDBNull(3) ? null : r.GetString(3)
+                });
+        }
+
+        MinPrices = await RoomSearch.MinNightlyRatesAsync(conn, Clock.Today);
+
         // Загружаем города
         using (var cmd = new NpgsqlCommand(
-            "SELECT id, country_id, name FROM cities ORDER BY name", conn))
+            "SELECT id, country_id, name FROM cities c " +
+            "WHERE EXISTS (SELECT 1 FROM hotels h WHERE h.city_id = c.id) ORDER BY name", conn))
         using (var r = await cmd.ExecuteReaderAsync())
         {
             while (await r.ReadAsync())

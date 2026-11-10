@@ -94,7 +94,7 @@ public static class RoomSearch
     }
 
     public static Task<List<RoomOffer>> SearchAsync(
-        NpgsqlConnection conn, int cityId, DateOnly from, DateOnly to, int guests) =>
+        NpgsqlConnection conn, int? cityId, DateOnly from, DateOnly to, int guests) =>
         LoadOffersAsync(conn, cityId, null, null, from, to, guests);
 
     public static async Task<RoomOffer?> FindOfferAsync(

@@ -1,15 +1,75 @@
 @page
 @model SearchModel
+@using QonaqHotels.Models
 @{
     ViewData["Title"] = "Поиск номеров";
 }
 <section class="section">
-    <div class="section-inner" style="text-align:center;padding:4rem 2rem">
-        <h1>Поиск номеров</h1>
-        @if (Model.DateError != null) {
-            <p style="color:var(--c-error)">@Model.DateError</p>
+    <div class="section-inner">
+        <h1 class="section-title">Поиск номеров</h1>
+
+        <form method="get" action="/Search" class="search-bar search-bar--page">
+            <div class="search-field">
+                <label for="s-city">Город</label>
+                <select name="city" id="s-city">
+                    <option value="">Все города</option>
+                    @foreach (var c in Model.Cities) {
+                        <option value="@c.Id" selected="@(c.Id == Model.City)">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="s-from">Заезд</label>
+                <input type="date" id="s-from" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="search-field">
+                <label for="s-to">Выезд</label>
+                <input type="date" id="s-to" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="search-field" style="max-width:100px">
+                <label for="s-guests">Гостей</label>
+                <input type="number" id="s-guests" name="guests" value="@Model.Guests" min="1" max="6" />
+            </div>
+            <button type="submit" class="btn-primary">Найти</button>
+        </form>
+
+        @if (Model.Error != null) {
+            <p class="search-error">@Model.Error</p>
+        } else if (Model.Searched && Model.Offers.Count == 0) {
+            <p class="search-empty">На эти даты свободных номеров нет. Попробуйте другие даты или город.</p>
         }
-        <p style="color:#666">Поиск номеров скоро заработает.</p>
-        <a href="/" class="btn-primary">На главную</a>
+
+        @if (Model.Offers.Count > 0) {
+            <div class="offer-list">
+                @foreach (var o in Model.Offers) {
+                    <article class="offer">
+                        <div class="offer-main">
+                            <div class="stars">@string.Concat(Enumerable.Repeat("★", o.Stars))</div>
+                            <h3>@o.RoomTypeName <span class="offer-hotel">· @o.HotelName</span></h3>
+                            <p class="offer-meta">
+                                <i class="bi bi-geo-alt"></i> @o.Address
+                                · до @o.Capacity гостей
+                                @if (o.AreaM2 != null) { <text>· @o.AreaM2.Value.ToString("0.#") м²</text> }
+                                @if (o.BedType != null) { <text>· кровать: @o.BedType</text> }
+                            </p>
+                            @if (o.Description != null) { <p>@o.Description</p> }
+                            <ul class="offer-amenities">
+                                @foreach (var a in o.Amenities) {
+                                    <li title="@a.Name"><i class="bi bi-@(a.Icon ?? "check2")"></i> @a.Name</li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="offer-price">
+                            <div class="offer-night">@Money.Usd(o.AvgPerNight) <small>/ ночь</small></div>
+                            <div class="offer-total">@Money.Usd(o.TotalPrice) за @o.Nights @SearchModel.NightsWord(o.Nights)</div>
+                            @if (o.FreeRooms <= 3) {
+                                <div class="offer-left">Осталось @o.FreeRooms</div>
+                            }
+                            <a href="@Model.RequestUrl(o)" class="btn-primary">Забронировать</a>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
     </div>
 </section>

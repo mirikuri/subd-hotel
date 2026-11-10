@@ -80,8 +80,16 @@
                     <img src="@Model.RoomImage(rt.Id)" alt="Номер @rt.Name" loading="lazy" />
                     <div class="card-body">
                         <h3>@rt.Name</h3>
-                        <p>Вместимость: до @rt.Capacity чел.</p>
+                        <p>Вместимость: до @rt.Capacity чел.@if (rt.AreaM2 != null) { <text> · @rt.AreaM2.Value.ToString("0.#") м²</text> }</p>
+                        @if (Model.MinPrices.TryGetValue(rt.Id, out var minPrice)) {
+                            <p class="room-price">от @QonaqHotels.Models.Money.Usd(minPrice) за ночь</p>
+                        }
                         <p>@rt.Description</p>
+                        @if (rt.Amenities.Count > 0) {
+                            <div class="room-amenities">
+                                @foreach (var a in rt.Amenities) { <span title="@a.Name"><i class="bi bi-@(a.Icon ?? "check2")"></i> @a.Name</span> }
+                            </div>
+                        }
                         <a href="/rooms#type-@rt.Id" class="btn-primary">Подробнее</a>
                     </div>
                 </div>
