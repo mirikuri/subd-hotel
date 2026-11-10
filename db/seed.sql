@@ -203,6 +203,35 @@ FROM (VALUES
 JOIN hotels h    ON h.name = v.hotel
 JOIN positions p ON p.name = v.position;
 
+-- ── Демо-учётки сотрудников ─────────────────────────────────────────────────
+-- Пароль у всех: Test1234!  (хеш ASP.NET Core Identity PasswordHasher, один на всех — только для демо).
+-- admin — системный администратор (раньше его создавал Seeder при пустой users).
+-- Остальные: <город>.<должность><n>, например astana.reception1. Уволенные — учётка отключена.
+-- Горничные и техники учёток не получают: у них нет работы в системе.
+INSERT INTO employees (hotel_id, position_id, full_name, hire_date)
+SELECT h.id, p.id, 'Администратор Системы', '2019-01-01'
+FROM hotels h, positions p
+WHERE h.name = 'Qonaq Astana Center' AND p.name = 'администратор';
+
+INSERT INTO users (employee_id, login, password_hash, role, is_active, locked_until)
+SELECT e.id,
+       CASE WHEN p.name = 'администратор' THEN 'admin'
+            ELSE lower(split_part(h.name, ' ', 2)) || '.' ||
+                 CASE p.name WHEN 'управляющий отелем'      THEN 'manager'
+                             WHEN 'администратор ресепшена' THEN 'reception'
+                             WHEN 'бухгалтер'               THEN 'accountant'
+                             WHEN 'консьерж'                THEN 'concierge' END ||
+                 row_number() OVER (PARTITION BY e.hotel_id, p.id ORDER BY e.id)
+       END,
+       'AQAAAAIAAYagAAAAECOpFG1Xl9nJ0XNhpCBKvv74u5zurrJ4f4jac2Btm55Kp9Zprqe7wChwksV4QP+67A==',
+       p.role,
+       e.dismissal_date IS NULL,
+       CASE WHEN e.dismissal_date IS NOT NULL THEN now() + interval '100 years' END
+FROM employees e
+JOIN positions p ON p.id = e.position_id
+JOIN hotels h    ON h.id = e.hotel_id
+WHERE p.name IN ('администратор', 'управляющий отелем', 'администратор ресепшена', 'бухгалтер', 'консьерж');
+
 -- Смены ресепшена на неделю назад и вперёд: первый администратор каждого отеля — днём
 -- (08:00–20:00), второй — ночью (20:00–08:00). EXCLUDE в shifts не даёт сменам одного
 -- сотрудника пересечься, hours_worked считает сама БД (GENERATED ALWAYS AS ... STORED).
@@ -258,6 +287,13 @@ FROM (VALUES
     ('Байжанов Максат Ерболович',      'N00000030',  '1999-04-15', '+77021234530',  'maksat.b@gmail.com',    'Казахстан')
 ) AS v(full_name, doc, birth_date, phone, email, country)
 JOIN countries c ON c.name = v.country;
+
+-- Демо-логины гостей сайта: guest1 … guest30 (по порядку добавления), пароль Test1234!
+UPDATE guests g
+SET login = 'guest' || n.rn,
+    password_hash = 'AQAAAAIAAYagAAAAECOpFG1Xl9nJ0XNhpCBKvv74u5zurrJ4f4jac2Btm55Kp9Zprqe7wChwksV4QP+67A=='
+FROM (SELECT id, row_number() OVER (ORDER BY id) AS rn FROM guests) n
+WHERE n.id = g.id;
 
 INSERT INTO loyalty_cards (guest_id, card_number, level, bonus_points, issue_date)
 SELECT g.id, v.card_number, v.level, v.bonus_points, CURRENT_DATE - v.days_ago
