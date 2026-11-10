@@ -324,3 +324,60 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 359px) {
   .section { padding: 3rem 1rem; }
 }
+
+/* ── Выпадающие списки с поиском (js/searchable-select.js) ── */
+.ss { position: relative; display: block; }
+.ss.ss-inline { display: inline-block; vertical-align: middle; }
+.ss-native {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
+  pointer-events: none;
+}
+.ss-input { width: 100%; cursor: text !important; text-overflow: ellipsis; }
+.ss-input:disabled { cursor: not-allowed !important; background-color: #f3f4f6; }
+.ss-input.is-invalid { border-color: var(--c-error); }
+
+.ss-list {
+  position: fixed;
+  z-index: 2000;
+  margin: 0;
+  padding: .25rem 0;
+  list-style: none;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d8dde5;
+  border-radius: 5px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+  font-family: var(--font-body);
+  font-size: .9rem;
+  line-height: 1.4;
+  color: var(--c-text);
+  text-align: left;
+}
+.ss-option {
+  padding: .4rem .75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ss-option.ss-active   { background: rgba(200, 161, 101, .18); }
+.ss-option.ss-selected { font-weight: 600; }
+.ss-option.ss-empty    { color: #8a92a0; }
+.ss-option.ss-disabled { color: #b5bac3; cursor: default; }
+.ss-option mark { background: none; color: inherit; font-weight: 700; text-decoration: underline; text-decoration-color: var(--c-accent); text-underline-offset: 2px; }
+.ss-none { padding: .4rem .75rem; color: #8a92a0; font-style: italic; }
+
+/* Поиск на главной: поле выглядит как прежний select */
+.search-bar .ss-input {
+  padding: .5rem 2rem .5rem .75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: .9rem;
+  color: var(--c-text);
+  background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23777' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") no-repeat right .65rem center / 14px 11px;
+}
