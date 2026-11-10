@@ -6,6 +6,14 @@ using QonaqHotels.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Русская культура, но дробная часть через точку: <input type="number"> в браузере всегда
+// отправляет «99.5», а ru-RU ждёт «99,5» — цены в справочниках не проходили бы привязку.
+var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.GetCultureInfo("ru-RU").Clone();
+culture.NumberFormat.NumberDecimalSeparator   = ".";
+culture.NumberFormat.CurrencyDecimalSeparator = ".";
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture   = culture;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+
 // Razor Pages: вся админка — только для сотрудников (гость сайта тоже «вошёл», но сюда не пускаем).
 // Отдельные страницы сужают доступ своими [Authorize(Policy = ...)].
 builder.Services.AddRazorPages(options => {

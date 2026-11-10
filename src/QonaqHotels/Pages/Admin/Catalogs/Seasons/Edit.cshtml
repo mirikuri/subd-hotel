@@ -1,0 +1,28 @@
+@page "{id:int?}"
+@model QonaqHotels.Pages.Admin.Catalogs.Seasons.EditModel
+@{ ViewData["Title"] = Model.Id is null ? "Добавить сезон" : "Сезон " + Model.Name; var ro = !Model.IsAdmin; }
+
+<h4>@ViewData["Title"]</h4>
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    <div class="mb-3"><label class="form-label">Название</label><input asp-for="Name" class="form-control" maxlength="60" disabled="@ro" /></div>
+    <div class="row">
+        <div class="col mb-3"><label class="form-label">С</label><input asp-for="DateStart" type="date" class="form-control" disabled="@ro" /></div>
+        <div class="col mb-3"><label class="form-label">По (включительно)</label><input asp-for="DateEnd" type="date" class="form-control" disabled="@ro" /></div>
+    </div>
+    <h6>Цена за ночь, $ <small class="text-muted">(пусто — тарифа нет, тип в этот сезон не продаётся)</small></h6>
+    <table class="table table-sm">
+        @for (var i = 0; i < Model.Prices.Count; i++) {
+            <tr>
+                <td>@Model.Prices[i].RoomTypeName<input type="hidden" name="Prices[@i].RoomTypeId" value="@Model.Prices[i].RoomTypeId" /></td>
+                <td style="width:160px"><div class="input-group input-group-sm"><span class="input-group-text">$</span>
+                    <input name="Prices[@i].Price" value="@Model.Prices[i].Price?.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                           type="number" step="0.01" min="0.01" class="form-control" /></div></td>
+            </tr>
+        }
+    </table>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>

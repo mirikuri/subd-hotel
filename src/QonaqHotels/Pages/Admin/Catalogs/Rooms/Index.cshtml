@@ -1,0 +1,39 @@
+@page
+@model QonaqHotels.Pages.Admin.Catalogs.Rooms.IndexModel
+@using QonaqHotels.Models
+@{ ViewData["Title"] = "Номера"; var isAdmin = User.IsInRole("админ"); var canStatus = isAdmin || User.IsInRole("ресепшен"); }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><a href="/Admin/Catalogs" class="text-decoration-none">Справочники</a> / Номера</h4>
+    @if (isAdmin) { <a asp-page="Edit" class="btn btn-primary btn-sm">+ Добавить</a> }
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><select name="hotel" class="form-select form-select-sm">
+        @foreach (var h in Model.Hotels) { <option value="@h.Value" selected="@(h.Value == Model.Hotel?.ToString())">@h.Text</option> }
+    </select></div>
+    <div class="col-auto"><select name="type" class="form-select form-select-sm"><option value="">Все типы</option>
+        @foreach (var t in Model.Types) { <option value="@t.Value" selected="@(t.Value == Model.Type?.ToString())">@t.Text</option> }
+    </select></div>
+    <div class="col-auto"><input name="floor" type="number" value="@Model.Floor" class="form-control form-control-sm" placeholder="Этаж" style="width:90px" /></div>
+    <div class="col-auto"><select name="status" class="form-select form-select-sm"><option value="">Все статусы</option>
+        @foreach (var s in new[] { RoomStatus.Free, RoomStatus.Occupied, RoomStatus.Cleaning, RoomStatus.Repair }) {
+            <option value="@s" selected="@(s == Model.Status)">@s</option> }
+    </select></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm">Показать</button></div>
+</form>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Отель</th><th>Номер</th><th>Этаж</th><th>Тип</th><th>Вид</th><th>Статус</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var r in Model.Rows) {
+        <tr>
+            <td>@r.Hotel</td><td>@r.Number</td><td>@r.Floor</td><td>@r.Type</td><td>@r.View</td><td>@r.Status</td>
+            <td>
+                @if (canStatus) { <a asp-page="Edit" asp-route-id="@r.Id" class="btn btn-outline-secondary btn-sm">@(isAdmin ? "Изменить" : "Статус")</a> }
+                @if (isAdmin) { <a asp-page="Delete" asp-route-id="@r.Id" class="btn btn-outline-danger btn-sm">Удалить</a> }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

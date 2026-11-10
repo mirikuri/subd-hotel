@@ -1,0 +1,48 @@
+@page
+@model QonaqHotels.Pages.Admin.Catalogs.RoomTypes.IndexModel
+@{ ViewData["Title"] = "Типы номеров"; var isAdmin = User.IsInRole("админ"); }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><a href="/Admin/Catalogs" class="text-decoration-none">Справочники</a> / Типы номеров</h4>
+    @if (isAdmin) { <a asp-page="Edit" class="btn btn-primary btn-sm">+ Добавить</a> }
+</div>
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Название</th><th>Мест</th><th>Площадь</th><th>Кровать</th><th>Удобства</th><th>Номеров</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var t in Model.Rows) {
+        <tr>
+            <td>@t.Name</td><td>@t.Capacity</td><td>@(t.Area?.ToString("0.#")) м²</td><td>@t.Bed</td><td>@t.Amenities</td><td>@t.Rooms</td>
+            <td>@if (isAdmin) {
+                <a asp-page="Edit" asp-route-id="@t.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
+                <a asp-page="Delete" asp-route-id="@t.Id" class="btn btn-outline-danger btn-sm">Удалить</a>
+            }</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h5 class="mt-4">Удобства</h5>
+<table class="table table-bordered table-sm" style="max-width:600px">
+    <thead class="table-light"><tr><th>Значок</th><th>Название</th><th>У типов</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var a in Model.Amenities) {
+        <tr>
+            <td><i class="bi bi-@(a.Icon ?? "check2")"></i> <small class="text-muted">@a.Icon</small></td><td>@a.Name</td><td>@a.Used</td>
+            <td>@if (isAdmin) {
+                <form method="post" asp-page-handler="DeleteAmenity" asp-route-id="@a.Id" class="d-inline">
+                    <button class="btn btn-outline-danger btn-sm">Удалить</button>
+                </form>
+            }</td>
+        </tr>
+    }
+    </tbody>
+</table>
+@if (isAdmin) {
+    <form method="post" asp-page-handler="AddAmenity" class="row g-2" style="max-width:600px">
+        <div class="col"><input name="name" class="form-control form-control-sm" placeholder="Новое удобство" maxlength="60" required /></div>
+        <div class="col"><input name="icon" class="form-control form-control-sm" placeholder="значок, напр. wifi" maxlength="40" /></div>
+        <div class="col-auto"><button class="btn btn-primary btn-sm">Добавить</button></div>
+    </form>
+}

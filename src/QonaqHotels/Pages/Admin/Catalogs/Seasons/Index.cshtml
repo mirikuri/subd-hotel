@@ -1,0 +1,25 @@
+@page
+@model QonaqHotels.Pages.Admin.Catalogs.Seasons.IndexModel
+@using QonaqHotels.Models
+@{ ViewData["Title"] = "Сезоны и тарифы"; var isAdmin = User.IsInRole("админ"); var canPrice = isAdmin || User.IsInRole("бухгалтер"); }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><a href="/Admin/Catalogs" class="text-decoration-none">Справочники</a> / Сезоны и тарифы</h4>
+    @if (isAdmin) { <a asp-page="Edit" class="btn btn-primary btn-sm">+ Добавить сезон</a> }
+</div>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Сезон</th><th>С</th><th>По</th><th>Тарифов</th><th>Цена за ночь</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var s in Model.Rows) {
+        <tr>
+            <td>@s.Name</td><td>@s.Start.ToString("dd.MM.yyyy")</td><td>@s.End.ToString("dd.MM.yyyy")</td><td>@s.Rates</td>
+            <td>@(s.MinPrice is decimal min ? Money.Usd(min) + " – " + Money.Usd(s.MaxPrice!.Value) : "—")</td>
+            <td>
+                @if (canPrice) { <a asp-page="Edit" asp-route-id="@s.Id" class="btn btn-outline-secondary btn-sm">@(isAdmin ? "Изменить" : "Цены")</a> }
+                @if (isAdmin) { <a asp-page="Delete" asp-route-id="@s.Id" class="btn btn-outline-danger btn-sm">Удалить</a> }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

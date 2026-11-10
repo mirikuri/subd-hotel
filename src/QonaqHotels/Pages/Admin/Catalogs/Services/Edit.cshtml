@@ -1,0 +1,24 @@
+@page "{id:int?}"
+@model QonaqHotels.Pages.Admin.Catalogs.Services.EditModel
+@{ ViewData["Title"] = Model.Id is null ? "Добавить услугу" : "Услуга " + Model.Name; var ro = !Model.IsAdmin; }
+
+<h4>@ViewData["Title"]</h4>
+@if (ro) { <p class="text-muted">Бухгалтер может менять цену и признак «продаётся».</p> }
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    <div class="mb-3"><label class="form-label">Отель</label><select asp-for="HotelId" asp-items="Model.Hotels" class="form-select" disabled="@ro"></select></div>
+    <div class="mb-3"><label class="form-label">Категория</label><select asp-for="CategoryId" asp-items="Model.Categories" class="form-select" disabled="@ro"></select></div>
+    <div class="mb-3"><label class="form-label">Название</label><input asp-for="Name" class="form-control" maxlength="120" disabled="@ro" /></div>
+    <div class="mb-3"><label class="form-label">Описание</label><textarea asp-for="Description" class="form-control" rows="2" disabled="@ro"></textarea></div>
+    <div class="row">
+        <div class="col mb-3"><label class="form-label">Цена</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+                <input name="Price" value="@Model.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0" class="form-control" /></div></div>
+        <div class="col mb-3"><label class="form-label">Единица</label><input asp-for="Unit" class="form-control" maxlength="20" disabled="@ro" /></div>
+    </div>
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Продаётся</label></div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>

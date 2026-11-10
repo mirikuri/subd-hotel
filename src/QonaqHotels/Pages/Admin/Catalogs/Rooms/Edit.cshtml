@@ -1,0 +1,32 @@
+@page "{id:int?}"
+@model QonaqHotels.Pages.Admin.Catalogs.Rooms.EditModel
+@using QonaqHotels.Models
+@{ ViewData["Title"] = Model.Id is null ? "Добавить номер" : "Номер " + Model.RoomNumber; var ro = !Model.IsAdmin; }
+
+<h4>@ViewData["Title"]</h4>
+@if (ro) { <p class="text-muted">Ресепшен может менять только статус номера.</p> }
+<div class="row"><div class="col-md-6">
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    <div class="mb-3"><label class="form-label">Отель</label><select asp-for="HotelId" asp-items="Model.Hotels" class="form-select" disabled="@ro"></select></div>
+    <div class="mb-3"><label class="form-label">Тип</label><select asp-for="RoomTypeId" asp-items="Model.Types" class="form-select" disabled="@ro"></select></div>
+    <div class="row">
+        <div class="col mb-3"><label class="form-label">Номер</label><input asp-for="RoomNumber" class="form-control" maxlength="10" disabled="@ro" /></div>
+        <div class="col mb-3"><label class="form-label">Этаж</label><input asp-for="Floor" type="number" class="form-control" disabled="@ro" /></div>
+        <div class="col mb-3"><label class="form-label">Вид</label>
+            <select asp-for="View" class="form-select" disabled="@ro"><option value="">—</option>
+                @foreach (var v in RoomView.All) { <option value="@v">@v</option> }
+            </select>
+        </div>
+    </div>
+    <div class="mb-3"><label class="form-label">Статус</label>
+        <select asp-for="Status" class="form-select">
+            @foreach (var s in Model.IsAdmin ? new[] { RoomStatus.Free, RoomStatus.Occupied, RoomStatus.Cleaning, RoomStatus.Repair } : QonaqHotels.Pages.Admin.Catalogs.Rooms.EditModel.EditableStatuses) {
+                <option value="@s">@s</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a asp-page="Index" class="btn btn-secondary ms-2">Отмена</a>
+</form>
+</div></div>

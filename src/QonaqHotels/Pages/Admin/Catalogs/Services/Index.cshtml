@@ -1,0 +1,43 @@
+@page
+@model QonaqHotels.Pages.Admin.Catalogs.Services.IndexModel
+@using QonaqHotels.Models
+@{ ViewData["Title"] = "Услуги"; var isAdmin = User.IsInRole("админ"); var canPrice = isAdmin || User.IsInRole("бухгалтер"); }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><a href="/Admin/Catalogs" class="text-decoration-none">Справочники</a> / Услуги</h4>
+    @if (isAdmin) { <a asp-page="Edit" class="btn btn-primary btn-sm">+ Добавить</a> }
+</div>
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><select name="hotel" class="form-select form-select-sm"><option value="">Все отели</option>
+        @foreach (var h in Model.Hotels) { <option value="@h.Value" selected="@(h.Value == Model.Hotel?.ToString())">@h.Text</option> }
+    </select></div>
+    <div class="col-auto"><select name="category" class="form-select form-select-sm"><option value="">Все категории</option>
+        @foreach (var c in Model.Categories) { <option value="@c.Value" selected="@(c.Value == Model.Category?.ToString())">@c.Text</option> }
+    </select></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm">Показать</button></div>
+</form>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Отель</th><th>Категория</th><th>Услуга</th><th>Цена</th><th>Ед.</th><th>Продаётся</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var s in Model.Rows) {
+        <tr class="@(s.IsActive ? "" : "text-muted")">
+            <td>@s.Hotel</td><td>@s.Category</td><td>@s.Name</td><td>@Money.Usd(s.Price)</td><td>@s.Unit</td><td>@(s.IsActive ? "да" : "нет")</td>
+            <td>
+                @if (canPrice) { <a asp-page="Edit" asp-route-id="@s.Id" class="btn btn-outline-secondary btn-sm">@(isAdmin ? "Изменить" : "Цена")</a> }
+                @if (isAdmin) { <a asp-page="Delete" asp-route-id="@s.Id" class="btn btn-outline-danger btn-sm">Удалить</a> }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (isAdmin) {
+    <h6 class="mt-4">Категории: @string.Join(", ", Model.Categories.Select(c => c.Text))</h6>
+    <form method="post" asp-page-handler="AddCategory" class="row g-2" style="max-width:420px">
+        <div class="col"><input name="name" class="form-control form-control-sm" placeholder="Новая категория" maxlength="60" required /></div>
+        <div class="col-auto"><button class="btn btn-primary btn-sm">Добавить</button></div>
+    </form>
+}
