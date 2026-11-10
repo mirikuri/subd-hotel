@@ -1,35 +1,23 @@
 using Npgsql;
+using QonaqHotels.Data;
 using QonaqHotels.Models;
 
 namespace QonaqHotels.Pages.Admin.Bookings;
 
 // SQL, который нужен сразу нескольким страницам раздела «Брони».
-internal static class BookingQueries
+public static class BookingQueries
 {
     // Свободные номера отеля на период [dateFrom, dateTo).
-    //
-    // Номер занят, если на него есть АКТИВНАЯ строка booking_rooms с пересекающимся периодом.
-    // Это ровно условие ограничения booking_rooms_room_id_daterange_excl:
-    //     EXCLUDE USING gist (room_id WITH =, daterange(date_from, date_to, '[)') WITH &&) WHERE (is_active)
-    // поэтому список совпадает с тем, что БД позволит вставить, а одинаковое выражение
-    // daterange(...) && daterange(...) позволяет планировщику взять GiST-индекс этого ограничения.
+    // Условие «свободен» — общее с сайтом: RoomSearch.FreeRoomCondition (совпадает с EXCLUDE-ограничением).
     // Статус брони здесь не смотрим: отмена брони освобождает номер через is_active = false.
-    private const string AvailableRoomsSql = """
+    private static readonly string AvailableRoomsSql = $"""
         SELECT r.id::text,
                r.room_number || ' · ' || rt.name ||
                CASE WHEN r.floor IS NOT NULL THEN ' (эт. ' || r.floor || ')' ELSE '' END
         FROM rooms r
         JOIN room_types rt ON rt.id = r.room_type_id
         WHERE r.hotel_id = @hotelId
-          AND r.status <> @repair
-          AND NOT EXISTS (
-              SELECT 1
-              FROM booking_rooms br
-              WHERE br.room_id = r.id
-                AND br.is_active
-                AND br.booking_id <> @excludeBookingId
-                AND daterange(br.date_from, br.date_to, '[)') && daterange(@dateFrom, @dateTo, '[)')
-          )
+          AND {RoomSearch.FreeRoomCondition}
         ORDER BY r.floor NULLS LAST, r.room_number
         """;
 
@@ -39,11 +27,8 @@ internal static class BookingQueries
         NpgsqlConnection conn, int hotelId, DateOnly dateFrom, DateOnly dateTo, int excludeBookingId = 0)
     {
         await using var cmd = new NpgsqlCommand(AvailableRoomsSql, conn);
-        cmd.Parameters.AddWithValue("hotelId",          hotelId);
-        cmd.Parameters.AddWithValue("repair",           RoomStatus.Repair);
-        cmd.Parameters.AddWithValue("excludeBookingId", excludeBookingId);
-        cmd.Parameters.AddWithValue("dateFrom",         dateFrom);
-        cmd.Parameters.AddWithValue("dateTo",           dateTo);
+        cmd.Parameters.AddWithValue("hotelId", hotelId);
+        RoomSearch.AddPeriod(cmd, dateFrom, dateTo, excludeBookingId);
 
         var list = new List<(string, string)>();
         await using var r = await cmd.ExecuteReaderAsync();
