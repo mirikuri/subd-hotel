@@ -22,6 +22,13 @@ public class RegisterLoginModel : PageModel
     public string? SuccessMessage  { get; set; }
     public string  ActiveTab       { get; set; } = "login";
 
+    // Куда вернуть гостя после входа (например, на подтверждение заявки)
+    [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
+
+    // Только адрес этого сайта — иначе ссылкой ?returnUrl=https://... можно увести гостя на чужой сайт
+    public static string SafeReturnUrl(string? url, IUrlHelper urlHelper) =>
+        !string.IsNullOrEmpty(url) && urlHelper.IsLocalUrl(url) ? url : "/";
+
     public class LoginInput
     {
         [Required(ErrorMessage = "Введите логин")]
@@ -70,7 +77,7 @@ public class RegisterLoginModel : PageModel
     public IActionResult OnGet()
     {
         if (User.Identity?.IsAuthenticated == true)
-            return Redirect("/");
+            return LocalRedirect(SafeReturnUrl(ReturnUrl, Url));
         return Page();
     }
 
@@ -91,7 +98,7 @@ public class RegisterLoginModel : PageModel
         }
 
         await SignInGuestAsync(result.Guest!.Id, result.Guest.FullName, Login.RememberMe);
-        return Redirect("/");
+        return LocalRedirect(SafeReturnUrl(ReturnUrl, Url));
     }
 
     public async Task<IActionResult> OnPostRegisterAsync()
@@ -119,7 +126,7 @@ public class RegisterLoginModel : PageModel
         }
 
         await SignInGuestAsync(result.Guest!.Id, result.Guest.FullName, isPersistent: false);
-        return Redirect("/");
+        return LocalRedirect(SafeReturnUrl(ReturnUrl, Url));
     }
 
     private async Task SignInGuestAsync(int guestId, string fullName, bool isPersistent)

@@ -1,0 +1,44 @@
+@page
+@model QonaqHotels.Pages.Booking.RequestModel
+@using QonaqHotels.Models
+@{
+    ViewData["Title"] = "Заявка на бронь";
+    var o = Model.Offer;
+}
+<section class="section">
+    <div class="section-inner" style="max-width:760px">
+        <h1 class="section-title">Заявка на бронь</h1>
+
+        @if (Model.Message != null) {
+            <p class="search-error">@Model.Message</p>
+        }
+
+        @if (o != null) {
+            <article class="offer">
+                <div class="offer-main">
+                    <div class="stars">@string.Concat(Enumerable.Repeat("★", o.Stars))</div>
+                    <h3>@o.RoomTypeName <span class="offer-hotel">· @o.HotelName</span></h3>
+                    <p class="offer-meta"><i class="bi bi-geo-alt"></i> @o.Address</p>
+                    <p>
+                        Заезд <b>@Model.From.ToString("dd.MM.yyyy")</b>, выезд <b>@Model.To.ToString("dd.MM.yyyy")</b>
+                        · @o.Nights @QonaqHotels.Pages.SearchModel.NightsWord(o.Nights) · гостей: @Model.Guests
+                    </p>
+                </div>
+                <div class="offer-price">
+                    <div class="offer-night">@Money.Usd(o.TotalPrice)</div>
+                    <div class="offer-total">@Money.Usd(o.AvgPerNight) в среднем за ночь</div>
+                </div>
+            </article>
+
+            <form method="post" style="margin-top:1.5rem">
+                <label for="comment" style="display:block;margin-bottom:.3rem">Пожелания (необязательно)</label>
+                <textarea id="comment" name="Comment" maxlength="500" rows="3" style="width:100%">@Model.Comment</textarea>
+                <p style="color:#666;font-size:.9rem">Оплата при заезде. Номер закрепляется за вами сразу, администратор подтвердит заявку.</p>
+                <button type="submit" class="btn-primary">Отправить заявку</button>
+                <a href="javascript:history.back()" style="margin-left:1rem">Назад</a>
+            </form>
+        } else {
+            <a href="/Search" class="btn-primary">К поиску</a>
+        }
+    </div>
+</section>

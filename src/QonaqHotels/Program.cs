@@ -33,6 +33,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan      = TimeSpan.FromHours(8);
         options.LoginPath           = "/Login";
         options.AccessDeniedPath    = "/AccessDenied";
+        // Гостевые страницы (/Booking) отправляют на вход для гостей, остальные — на вход сотрудников.
+        // returnUrl возвращает гостя на заявку после входа или регистрации.
+        options.Events.OnRedirectToLogin = ctx => {
+            if (ctx.Request.Path.StartsWithSegments("/Booking", StringComparison.OrdinalIgnoreCase)) {
+                var back = ctx.Request.Path + ctx.Request.QueryString;
+                ctx.Response.Redirect("/Register-Login?returnUrl=" + Uri.EscapeDataString(back));
+            } else {
+                ctx.Response.Redirect(ctx.RedirectUri);
+            }
+            return Task.CompletedTask;
+        };
     });
 
 // Role policies

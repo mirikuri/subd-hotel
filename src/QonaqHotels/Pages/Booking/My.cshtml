@@ -1,0 +1,49 @@
+@page
+@model QonaqHotels.Pages.Booking.MyModel
+@using QonaqHotels.Models
+@{
+    ViewData["Title"] = "Мои брони";
+}
+<section class="section">
+    <div class="section-inner">
+        <h1 class="section-title">Мои брони</h1>
+
+        @if (Model.Message != null) {
+            <p class="my-message">@Model.Message</p>
+        }
+
+        @if (Model.Bookings.Count == 0) {
+            <p>Броней пока нет.</p>
+            <a href="/Search" class="btn-primary">Найти номер</a>
+        } else {
+            <div class="my-table-wrap">
+            <table class="my-table">
+                <thead>
+                    <tr><th>Бронь</th><th>Отель</th><th>Номер</th><th>Даты</th><th>Гостей</th><th>Сумма</th><th>Статус</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.Bookings) {
+                        <tr>
+                            <td>№@b.Id</td>
+                            <td>@b.HotelName</td>
+                            <td>@b.RoomTypeName@(b.RoomNumber != null ? ", " + b.RoomNumber : "")</td>
+                            <td>@b.From.ToString("dd.MM.yyyy") – @b.To.ToString("dd.MM.yyyy")</td>
+                            <td>@b.Guests</td>
+                            <td>@(b.Total is decimal total ? Money.Usd(total) : "—")</td>
+                            <td>@b.Status</td>
+                            <td>
+                                @if (b.Status == BookingStatus.New) {
+                                    <form method="post" asp-page-handler="Cancel" asp-route-id="@b.Id"
+                                          onsubmit="return confirm('Отменить заявку №@b.Id?')">
+                                        <button type="submit" class="btn-link-danger">Отменить</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        }
+    </div>
+</section>

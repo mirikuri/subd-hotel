@@ -403,3 +403,11 @@ img { max-width: 100%; height: auto; }
     .offer { flex-direction: column; }
     .offer-price { align-items: flex-start; text-align: left; }
 }
+
+/* ── Мои брони (/Booking/My) ─────────────────────────────────────────────── */
+.my-message { background: #eef7ee; padding: .75rem 1rem; border-radius: 6px; }
+.my-table-wrap { overflow-x: auto; }
+.my-table { width: 100%; border-collapse: collapse; background: #fff; }
+.my-table th, .my-table td { padding: .6rem .75rem; border-bottom: 1px solid #eee; text-align: left; font-size: .9rem; }
+.my-table th { color: #666; font-weight: 500; }
+.btn-link-danger { background: none; border: none; color: var(--c-error); cursor: pointer; padding: 0; }

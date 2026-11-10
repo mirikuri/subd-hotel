@@ -39,6 +39,8 @@
                     <div class="dropdown-menu" id="user-dropdown-menu" style="display:none;position:absolute;right:0;top:110%;background:#fff;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:180px;z-index:200">
                         @if (isStaff) {
                             <a class="dropdown-item" href="/admin" style="display:block;padding:.5rem 1rem;color:var(--c-dark);text-decoration:none">Панель управления</a>
+                        } else if (userRole == "гость") {
+                            <a class="dropdown-item" href="/Booking/My" style="display:block;padding:.5rem 1rem;color:var(--c-dark);text-decoration:none">Мои брони</a>
                         }
                         <form method="post" asp-page="/Logout">
                             <button type="submit" style="display:block;width:100%;padding:.5rem 1rem;background:none;border:none;text-align:left;cursor:pointer;color:var(--c-error)">Выйти</button>

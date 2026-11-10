@@ -38,7 +38,7 @@
         }
 
         <div id="tab-login" class="tab-pane @(Model.ActiveTab == "login" ? "active" : "")">
-            <form method="post" asp-page-handler="Login">
+            <form method="post" asp-page-handler="Login" asp-route-returnUrl="@Model.ReturnUrl">
                 <div class="form-group">
                     <label asp-for="Login.LoginName">Логин</label>
                     <input asp-for="Login.LoginName" type="text" autocomplete="username" />
@@ -66,7 +66,7 @@
         </div>
 
         <div id="tab-register" class="tab-pane @(Model.ActiveTab == "register" ? "active" : "")">
-            <form method="post" asp-page-handler="Register">
+            <form method="post" asp-page-handler="Register" asp-route-returnUrl="@Model.ReturnUrl">
                 <div class="form-group">
                     <label asp-for="Register.FullName">ФИО</label>
                     <input asp-for="Register.FullName" type="text" autocomplete="name" />
