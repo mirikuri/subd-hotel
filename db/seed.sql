@@ -204,7 +204,7 @@ JOIN hotels h    ON h.name = v.hotel
 JOIN positions p ON p.name = v.position;
 
 -- ── Демо-учётки сотрудников ─────────────────────────────────────────────────
--- Пароль у всех: Test1234!  (хеш ASP.NET Core Identity PasswordHasher, один на всех — только для демо).
+-- Пароль у всех: Test1234!, у admin — 123  (хеш ASP.NET Core Identity PasswordHasher, один на всех — только для демо).
 -- admin — системный администратор (раньше его создавал Seeder при пустой users).
 -- Остальные: <город>.<должность><n>, например astana.reception1. Уволенные — учётка отключена.
 -- Горничные и техники учёток не получают: у них нет работы в системе.
@@ -223,7 +223,9 @@ SELECT e.id,
                              WHEN 'консьерж'                THEN 'concierge' END ||
                  row_number() OVER (PARTITION BY e.hotel_id, p.id ORDER BY e.id)
        END,
-       'AQAAAAIAAYagAAAAECOpFG1Xl9nJ0XNhpCBKvv74u5zurrJ4f4jac2Btm55Kp9Zprqe7wChwksV4QP+67A==',
+       CASE WHEN p.name = 'администратор'
+            THEN 'AQAAAAIAAYagAAAAEDyD1Smhm09OTq5REqT5QPdLm7YdUP+u6R+8yYMQ4Nc7XOzW8C5nO3gogVmvtNZsVQ=='   -- admin: 123
+            ELSE 'AQAAAAIAAYagAAAAECOpFG1Xl9nJ0XNhpCBKvv74u5zurrJ4f4jac2Btm55Kp9Zprqe7wChwksV4QP+67A==' END,   -- Test1234!
        p.role,
        e.dismissal_date IS NULL,
        CASE WHEN e.dismissal_date IS NOT NULL THEN now() + interval '100 years' END
