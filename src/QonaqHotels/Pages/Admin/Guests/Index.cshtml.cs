@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Npgsql;
 using QonaqHotels.Data;
 using QonaqHotels.Pages.Admin;
@@ -29,7 +30,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         await using var conn = await _db.OpenAsync();
-        Guests = await LoadGuests(conn, null, null, null);
+        Guests = TakePage(await LoadGuests(conn, null, null, null, page: 1), page: 1);
         var countries = await AdminLists.OptionsAsync(conn, AdminLists.Countries);
         FilterBar = new FilterBarModel
         {
@@ -44,15 +45,36 @@ public class IndexModel : PageModel
         };
     }
 
-    public async Task<IActionResult> OnGetSearchAsync(string? q, int? country, string? active)
+    public async Task<IActionResult> OnGetSearchAsync(string? q, int? country, string? active, int pageNo = 1)   // «page» в Razor Pages занято: это путь страницы
     {
+        if (pageNo < 1) pageNo = 1;
         await using var conn = await _db.OpenAsync();
-        var rows = await LoadGuests(conn, q, country, active);
-        return Partial("_GuestsRows", rows);
+        var rows = await LoadGuests(conn, q, country, active, pageNo);
+        // PageModel.Partial() создаёт пустой ViewData, а кнопке «Показать ещё» нужен ViewData["NextPage"],
+        // поэтому результат собираем сами — с копией ViewData страницы.
+        return new PartialViewResult
+        {
+            ViewName = "_GuestsRows",
+            ViewData = new ViewDataDictionary<IEnumerable<GuestRow>>(ViewData, TakePage(rows, pageNo))
+        };
+    }
+
+    // Список показывается порциями по PageSize строк (кнопка «Показать ещё»)
+    public const int PageSize = 50;
+
+    // Запрос берёт на одну строку больше порции: если она пришла — дальше есть ещё
+    private List<GuestRow> TakePage(List<GuestRow> rows, int page)
+    {
+        if (rows.Count > PageSize)
+        {
+            rows.RemoveAt(PageSize);
+            ViewData["NextPage"] = page + 1;
+        }
+        return rows;
     }
 
     private static async Task<List<GuestRow>> LoadGuests(
-        NpgsqlConnection conn, string? q, int? country, string? active)
+        NpgsqlConnection conn, string? q, int? country, string? active, int page)
     {
         var safeQ = q is null ? null : "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
         using var cmd = new NpgsqlCommand(
@@ -63,11 +85,14 @@ public class IndexModel : PageModel
             "                       OR lower(g.document_number) LIKE lower(@q) ESCAPE '\\') " +
             "  AND (@country::int IS NULL OR g.country_id = @country) " +
             "  AND (@active::text IS NULL OR g.is_active = (@active = '1')) " +
-            "ORDER BY g.full_name", conn);
+            "ORDER BY g.full_name, g.id " +
+            "LIMIT @limit OFFSET @offset", conn);
 
         cmd.Parameters.AddWithValue("q",       (object?)safeQ   ?? DBNull.Value);
         cmd.Parameters.AddWithValue("country", (object?)country ?? DBNull.Value);
         cmd.Parameters.AddWithValue("active",  (object?)active  ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("limit",   PageSize + 1);
+        cmd.Parameters.AddWithValue("offset",  (page - 1) * PageSize);
 
         var rows = new List<GuestRow>();
         await using var r = await cmd.ExecuteReaderAsync();

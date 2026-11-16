@@ -1,0 +1,11 @@
+@* Последняя строка порции: кнопка «Показать ещё». Есть, только если дальше остались строки
+   (ViewData["NextPage"] ставит страница). По нажатию admin-filter.js подгружает следующую
+   порцию с теми же фильтрами и заменяет эту строку на неё. *@
+@if (ViewData["NextPage"] is int nextPage)
+{
+    <tr class="more-row">
+        <td colspan="99" class="text-center">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-next-page="@nextPage">Показать ещё</button>
+        </td>
+    </tr>
+}

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Npgsql;
 using QonaqHotels.Data;
 using QonaqHotels.Pages.Admin;
@@ -33,9 +34,9 @@ public class IndexModel : PageModel
     {
         await using var conn = await _db.OpenAsync();
 
-        Bookings = await LoadBookings(
+        Bookings = TakePage(await LoadBookings(
             conn, null, null, null, null, null, null,
-            null, null, null, null);
+            null, null, null, null, page: 1), page: 1);
 
         var countries = await AdminLists.OptionsAsync(conn, AdminLists.Countries);
 
@@ -194,19 +195,42 @@ public class IndexModel : PageModel
         DateOnly? checkinFrom,
         DateOnly? checkinTo,
         DateOnly? checkoutFrom,
-        DateOnly? checkoutTo)
+        DateOnly? checkoutTo,
+        int pageNo = 1)   // «page» в Razor Pages занято: это путь страницы
     {
+        if (pageNo < 1) pageNo = 1;
         await using var conn = await _db.OpenAsync();
 
         var rows = await LoadBookings(
             conn, q, country, city, hotel, status, source,
-            checkinFrom, checkinTo, checkoutFrom, checkoutTo
+            checkinFrom, checkinTo, checkoutFrom, checkoutTo, pageNo
         );
 
-        return Partial("_BookingsRows", rows);
+        // PageModel.Partial() создаёт пустой ViewData, а кнопке «Показать ещё» нужен ViewData["NextPage"],
+        // поэтому результат собираем сами — с копией ViewData страницы.
+        return new PartialViewResult
+        {
+            ViewName = "_BookingsRows",
+            ViewData = new ViewDataDictionary<IEnumerable<BookingRow>>(ViewData, TakePage(rows, pageNo))
+        };
     }
 
-    // Общий SQL-запрос для загрузки бронирований
+    // Список показывается порциями по PageSize строк (кнопка «Показать ещё»).
+    public const int PageSize = 50;
+
+    // Запрос берёт на одну строку больше порции: если она пришла — значит, дальше есть ещё.
+    // Лишнюю строку убираем, а номер следующей порции передаём в представление.
+    private List<BookingRow> TakePage(List<BookingRow> rows, int page)
+    {
+        if (rows.Count > PageSize)
+        {
+            rows.RemoveAt(PageSize);
+            ViewData["NextPage"] = page + 1;
+        }
+        return rows;
+    }
+
+    // Общий SQL-запрос для загрузки бронирований: порция page (с 1), PageSize + 1 строк
     private static async Task<List<BookingRow>> LoadBookings(
         NpgsqlConnection conn,
         string? q,
@@ -218,7 +242,8 @@ public class IndexModel : PageModel
         DateOnly? checkinFrom,
         DateOnly? checkinTo,
         DateOnly? checkoutFrom,
-        DateOnly? checkoutTo)
+        DateOnly? checkoutTo,
+        int page)
     {
         var safeQ = q is null
             ? null
@@ -251,7 +276,8 @@ public class IndexModel : PageModel
                 AND (@checkinTo::date IS NULL OR b.check_in_plan <= @checkinTo)
                 AND (@checkoutFrom::date IS NULL OR b.check_out_plan >= @checkoutFrom)
                 AND (@checkoutTo::date IS NULL OR b.check_out_plan <= @checkoutTo)
-            ORDER BY b.booking_date DESC
+            ORDER BY b.booking_date DESC, b.id DESC
+            LIMIT @limit OFFSET @offset
             """,
             conn
         );
@@ -266,6 +292,8 @@ public class IndexModel : PageModel
         cmd.Parameters.AddWithValue("checkinTo", (object?)checkinTo ?? DBNull.Value);
         cmd.Parameters.AddWithValue("checkoutFrom", (object?)checkoutFrom ?? DBNull.Value);
         cmd.Parameters.AddWithValue("checkoutTo", (object?)checkoutTo ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("limit", PageSize + 1);
+        cmd.Parameters.AddWithValue("offset", (page - 1) * PageSize);
 
         var rows = new List<BookingRow>();
 

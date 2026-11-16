@@ -139,6 +139,40 @@ function initFilter({ formId, tbodyId, searchUrl }) {
         });
     }
 
+    // «Показать ещё»: следующая порция строк с теми же фильтрами.
+    // Сервер отдаёт строки и, если есть продолжение, новую кнопку в конце.
+    tbody.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-next-page]');
+        if (!btn) return;
+
+        const params = new URLSearchParams();
+        params.set('handler', 'Search');
+        new FormData(form).forEach(function (value, key) {
+            if (value !== '') {
+                params.set(key, value);
+            }
+        });
+        params.set('pageNo', btn.dataset.nextPage);
+
+        btn.disabled = true;
+        btn.textContent = 'Загрузка…';
+
+        fetch(searchUrl + '?' + params.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            btn.closest('tr').remove();
+            tbody.insertAdjacentHTML('beforeend', html);
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = 'Ошибка — повторить';
+        });
+    });
+
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         runSearch();
