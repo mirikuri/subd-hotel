@@ -71,7 +71,9 @@ CREATE TABLE rooms (
                   CHECK (status IN ('свободен', 'занят', 'уборка', 'ремонт')),
     view          varchar(20) CONSTRAINT rooms_view_check
                   CHECK (view IN ('город', 'парк', 'двор', 'горы')),
-    UNIQUE (hotel_id, room_number)
+    UNIQUE (hotel_id, room_number),
+    -- цель составного внешнего ключа booking_rooms (номер + его отель)
+    CONSTRAINT rooms_id_hotel_key UNIQUE (id, hotel_id)
 );
 
 -- Сезоны периоды
@@ -80,7 +82,7 @@ CREATE TABLE seasons (
     name       varchar(60) NOT NULL,
     date_start date NOT NULL,
     date_end   date NOT NULL,
-    CHECK (date_end >= date_start),
+    CONSTRAINT seasons_dates_check CHECK (date_end >= date_start),
     CONSTRAINT seasons_no_overlap
         EXCLUDE USING gist (daterange(date_start, date_end, '[]') WITH &&)
 );
@@ -103,7 +105,8 @@ COMMENT ON COLUMN rates.price_per_night IS 'USD';
 CREATE TABLE positions (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name         varchar(80) NOT NULL UNIQUE,
-    role         varchar(30) NOT NULL DEFAULT 'ресепшен',
+    role         varchar(30) NOT NULL DEFAULT 'ресепшен'
+                 CONSTRAINT positions_role_check CHECK (role IN ('админ', 'ресепшен', 'бухгалтер')),
     base_salary  numeric(10,2),
     hourly_rate  numeric(8,2)
 );
@@ -116,7 +119,7 @@ CREATE TABLE employees (
     phone            varchar(20),
     hire_date        date NOT NULL,
     dismissal_date   date,
-    CHECK (dismissal_date IS NULL OR dismissal_date >= hire_date)
+    CONSTRAINT employees_dates_check CHECK (dismissal_date IS NULL OR dismissal_date >= hire_date)
 );
 
 
@@ -134,13 +137,15 @@ CREATE TABLE guests (
     phone            varchar(20),
     email            varchar(120),
     country_id       int REFERENCES countries(id) ON DELETE RESTRICT,
-    login            varchar(50) UNIQUE,
+    login            varchar(50),             -- уникальность — индекс guests_login_lower_key ниже
     password_hash    varchar(500),
     is_active        boolean NOT NULL DEFAULT true,
     failed_attempts  int NOT NULL DEFAULT 0,
     locked_until     timestamptz,
     last_login_at    timestamptz,
-    registered_at    timestamptz NOT NULL DEFAULT now()
+    registered_at    timestamptz NOT NULL DEFAULT now(),
+    -- учётная запись сайта либо есть целиком (логин и пароль), либо её нет
+    CONSTRAINT guests_account_check CHECK ((login IS NULL) = (password_hash IS NULL))
 );
 
 -- Вход ищет логин без учёта регистра (lower(login) = lower(@login)),
@@ -175,20 +180,33 @@ CREATE TABLE bookings (
                      CHECK (source IN ('сайт', 'телефон', 'агрегатор', 'стойка')),
     cancel_reason    text,
     guest_comment    varchar(500),   -- пожелания гостя из заявки с сайта
-    CHECK (check_out_plan > check_in_plan)
+    CONSTRAINT bookings_dates_check CHECK (check_out_plan > check_in_plan),
+    -- причина отмены есть у отменённой брони и только у неё
+    CONSTRAINT bookings_cancel_reason_check
+        CHECK ((status = 'отменена') = (cancel_reason IS NOT NULL)),
+    -- цель составного внешнего ключа booking_rooms (бронь + её отель)
+    CONSTRAINT bookings_id_hotel_key UNIQUE (id, hotel_id)
 );
 
--- Какие номера входят в бронь и на какие даты
+-- Какие номера входят в бронь и на какие даты.
+-- hotel_id повторяет отель брони и отель номера, а два составных внешних ключа заставляют
+-- их совпадать: привязать к брони номер другого отеля нельзя даже прямым INSERT в psql.
 CREATE TABLE booking_rooms (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    booking_id    int NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-    room_id       int NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    booking_id    int NOT NULL,
+    room_id       int NOT NULL,
+    hotel_id      int NOT NULL,
     date_from     date NOT NULL,
     date_to       date NOT NULL,
     guests_count  smallint NOT NULL DEFAULT 1 CHECK (guests_count > 0),
     is_active     boolean NOT NULL DEFAULT true,
-    CHECK (date_to > date_from),
-    EXCLUDE USING gist (
+    CONSTRAINT booking_rooms_booking_fkey
+        FOREIGN KEY (booking_id, hotel_id) REFERENCES bookings (id, hotel_id) ON DELETE CASCADE,
+    CONSTRAINT booking_rooms_room_fkey
+        FOREIGN KEY (room_id, hotel_id) REFERENCES rooms (id, hotel_id) ON DELETE RESTRICT,
+    CONSTRAINT booking_rooms_dates_check CHECK (date_to > date_from),
+    -- один номер — одна активная бронь на ночь
+    CONSTRAINT booking_rooms_no_overlap EXCLUDE USING gist (
         room_id WITH =,
         daterange(date_from, date_to, '[)') WITH &&
     ) WHERE (is_active)
@@ -201,8 +219,11 @@ CREATE TABLE stays (
     actual_check_in    timestamp NOT NULL DEFAULT now(),
     actual_check_out   timestamp,
     employee_id        int NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
-    CHECK (actual_check_out IS NULL OR actual_check_out > actual_check_in)
+    CONSTRAINT stays_dates_check CHECK (actual_check_out IS NULL OR actual_check_out > actual_check_in)
 );
+
+-- У строки брони не больше одного открытого заселения (гость не может заехать дважды, не выехав)
+CREATE UNIQUE INDEX stays_one_open_key ON stays (booking_room_id) WHERE actual_check_out IS NULL;
 
 
 
@@ -253,9 +274,9 @@ CREATE TABLE shifts (
     hours_worked  numeric(5,2) GENERATED ALWAYS AS (
                       round((extract(epoch FROM shift_end - shift_start) / 3600)::numeric, 2)
                   ) STORED,
-    CHECK (shift_end > shift_start),
-    CHECK (shift_end - shift_start <= interval '24 hours'),
-    EXCLUDE USING gist (
+    CONSTRAINT shifts_dates_check  CHECK (shift_end > shift_start),
+    CONSTRAINT shifts_length_check CHECK (shift_end - shift_start <= interval '24 hours'),
+    CONSTRAINT shifts_no_overlap EXCLUDE USING gist (
         employee_id WITH =,
         tsrange(shift_start, shift_end, '[)') WITH &&
     )
@@ -268,7 +289,7 @@ CREATE TABLE shifts (
 CREATE TABLE users (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     employee_id     int NOT NULL UNIQUE REFERENCES employees(id) ON DELETE CASCADE,
-    login           varchar(50) NOT NULL UNIQUE,
+    login           varchar(50) NOT NULL,    -- уникальность — индекс users_login_lower_key ниже
     password_hash   varchar(255) NOT NULL,
     role            varchar(30) NOT NULL
                     CHECK (role IN ('админ', 'ресепшен', 'бухгалтер')),
@@ -290,3 +311,35 @@ CREATE TABLE audit_log (
     record_id    int,
     changed_at   timestamp NOT NULL DEFAULT now()
 );
+
+
+-- ── Индексы ──────────────────────────────────────────────────────────────────
+-- PostgreSQL сам создаёт индексы для PRIMARY KEY, UNIQUE и EXCLUDE, но не для столбцов
+-- внешних ключей. Без них каждая проверка ON DELETE RESTRICT / CASCADE при удалении
+-- родительской строки и каждый JOIN «родитель → дети» — последовательный просмотр.
+-- Здесь нет столбцов, которые уже стоят первыми в UNIQUE (rooms.hotel_id, rates.room_type_id,
+-- cities.country_id, loyalty_cards.guest_id, users.employee_id).
+CREATE INDEX hotels_city_id_idx               ON hotels (city_id);
+CREATE INDEX rooms_room_type_id_idx           ON rooms (room_type_id);
+CREATE INDEX room_type_amenities_amenity_idx  ON room_type_amenities (amenity_id);
+CREATE INDEX rates_season_id_idx              ON rates (season_id);
+CREATE INDEX employees_hotel_id_idx           ON employees (hotel_id);
+CREATE INDEX employees_position_id_idx        ON employees (position_id);
+CREATE INDEX guests_country_id_idx            ON guests (country_id);
+CREATE INDEX bookings_guest_id_idx            ON bookings (guest_id);
+CREATE INDEX bookings_hotel_id_idx            ON bookings (hotel_id);
+-- под составные внешние ключи; EXCLUDE-индекс по room_id частичный (только is_active) и их не заменяет
+CREATE INDEX booking_rooms_booking_idx        ON booking_rooms (booking_id, hotel_id);
+CREATE INDEX booking_rooms_room_idx           ON booking_rooms (room_id, hotel_id);
+CREATE INDEX stays_booking_room_id_idx        ON stays (booking_room_id);
+CREATE INDEX stays_employee_id_idx            ON stays (employee_id);
+CREATE INDEX services_hotel_id_idx            ON services (hotel_id);
+CREATE INDEX services_category_id_idx         ON services (category_id);
+CREATE INDEX service_orders_booking_id_idx    ON service_orders (booking_id);
+CREATE INDEX service_orders_service_id_idx    ON service_orders (service_id);
+CREATE INDEX service_orders_employee_id_idx   ON service_orders (employee_id);
+CREATE INDEX audit_log_user_id_idx            ON audit_log (user_id);
+
+-- Список броней в админке сортируется по дате оформления, отчёты и «Мои брони» ищут по заезду
+CREATE INDEX bookings_booking_date_idx        ON bookings (booking_date DESC);
+CREATE INDEX bookings_check_in_plan_idx       ON bookings (check_in_plan);

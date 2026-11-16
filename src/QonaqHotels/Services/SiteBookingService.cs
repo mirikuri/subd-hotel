@@ -106,11 +106,12 @@ public class SiteBookingService
         }
 
         await using var br = new NpgsqlCommand("""
-            INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to, guests_count)
-            VALUES (@b, @r, @f, @t, @n)
+            INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to, guests_count)
+            VALUES (@b, @r, @h, @f, @t, @n)
             """, conn, tx);
         br.Parameters.AddWithValue("b", bookingId);
         br.Parameters.AddWithValue("r", roomId);
+        br.Parameters.AddWithValue("h", hotelId);
         br.Parameters.AddWithValue("f", from);
         br.Parameters.AddWithValue("t", to);
         br.Parameters.AddWithValue("n", (short)guests);

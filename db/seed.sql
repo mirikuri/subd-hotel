@@ -386,8 +386,8 @@ new_bookings AS (
     FROM plan
     RETURNING id, guest_id, hotel_id, check_in_plan
 )
-INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to, guests_count, is_active)
-SELECT nb.id, p.room_id, p.check_in, p.check_out, p.guests, p.status <> 'отменена'
+INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to, guests_count, is_active)
+SELECT nb.id, p.room_id, p.hotel_id, p.check_in, p.check_out, p.guests, p.status <> 'отменена'
 FROM new_bookings nb
 JOIN plan p ON p.guest_id = nb.guest_id
            AND p.hotel_id = nb.hotel_id
@@ -449,8 +449,8 @@ new_bookings AS (
     FROM plan
     RETURNING id, booking_date, check_in_plan
 )
-INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to, guests_count, is_active)
-SELECT nb.id, p.room_id, p.check_in, p.check_out, p.guests, NOT p.cancelled
+INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to, guests_count, is_active)
+SELECT nb.id, p.room_id, p.hotel_id, p.check_in, p.check_out, p.guests, NOT p.cancelled
 FROM new_bookings nb
 JOIN plan p ON p.check_in = nb.check_in_plan
            AND (p.check_in - p.lead) + time '08:00' + p.room_id * interval '1 minute' = nb.booking_date;

@@ -178,8 +178,8 @@ public class EditModel : PageModel
 
         // 3. Новый номер — только из отеля брони и не на ремонте
         await using var add = new NpgsqlCommand("""
-            INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to)
-            SELECT @id, r.id, @df, @dt
+            INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to)
+            SELECT @id, r.id, r.hotel_id, @df, @dt
             FROM rooms r
             WHERE r.id = @rid AND r.hotel_id = @h AND r.status <> @repair
             """, conn, tx);

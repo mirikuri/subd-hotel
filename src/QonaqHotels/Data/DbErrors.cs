@@ -27,14 +27,13 @@ public static class DbErrors
     public static bool IsConstraintViolation(PostgresException ex) =>
         ex.SqlState.StartsWith("23", StringComparison.Ordinal);
 
-    // Имена ограничений PostgreSQL генерирует по шаблону <таблица>_<столбец>_key / _fkey / _check / _excl.
-    // Сверять с db/schema.sql: \d имя_таблицы в psql показывает имена.
+    // Ограничения, чьи имена здесь перечислены, названы в db/schema.sql явно (CONSTRAINT имя ...)
+    // либо получают предсказуемое имя одного столбца: <таблица>_<столбец>_key / _fkey / _check.
+    // Соответствие словаря и схемы проверяет тест SchemaTests.DbErrors_KnowOnlyExistingConstraints.
     private static readonly Dictionary<string, string> ByConstraint = new()
     {
         // UNIQUE
         ["guests_document_number_key"] = "Гость с таким номером документа уже есть.",
-        ["guests_login_key"]           = "Этот логин уже занят.",
-        ["users_login_key"]            = "Такой логин уже занят.",
         ["users_login_lower_key"]      = "Такой логин уже занят.",
         ["guests_login_lower_key"]     = "Этот логин уже занят.",
         ["users_employee_id_key"]      = "У этого сотрудника уже есть учётная запись.",
@@ -49,15 +48,25 @@ public static class DbErrors
         // EXCLUDE: сезоны идут без пересечений
         ["seasons_no_overlap"] = "Сезон пересекается с другим сезоном.",
 
+        // UNIQUE-индекс и EXCLUDE: заселения и смены
+        ["stays_one_open_key"] = "По этой брони гость уже заселён и ещё не выехал.",
+        ["shifts_no_overlap"]  = "Смена пересекается с другой сменой сотрудника.",
+
         // EXCLUDE: пересечение периодов
-        ["booking_rooms_room_id_daterange_excl"] = "Номер уже занят на выбранные даты.",
+        ["booking_rooms_no_overlap"] = "Номер уже занят на выбранные даты.",
 
         // CHECK
-        ["bookings_check"]        = "Дата выезда должна быть позже даты заезда.",
-        ["booking_rooms_check"]   = "Дата выезда должна быть позже даты заезда.",
+        ["bookings_dates_check"]         = "Дата выезда должна быть позже даты заезда.",
+        ["booking_rooms_dates_check"]    = "Дата выезда должна быть позже даты заезда.",
+        ["bookings_cancel_reason_check"] = "Причина отмены указывается у отменённой брони и только у неё.",
+        ["positions_role_check"]         = "Недопустимая роль: разрешены админ, ресепшен, бухгалтер.",
+        ["guests_account_check"]         = "Логин и пароль гостя задаются только вместе.",
+        ["stays_dates_check"]            = "Выезд не может быть раньше заезда.",
+        ["shifts_dates_check"]           = "Конец смены должен быть позже начала.",
+        ["shifts_length_check"]          = "Смена не может быть длиннее 24 часов.",
         ["bookings_status_check"] = "Недопустимый статус брони.",
         ["bookings_source_check"] = "Недопустимый источник брони.",
-        ["employees_check"]       = "Дата увольнения не может быть раньше даты приёма.",
+        ["employees_dates_check"] = "Дата увольнения не может быть раньше даты приёма.",
         ["users_role_check"]      = "Недопустимая роль: разрешены админ, ресепшен, бухгалтер.",
         ["room_types_area_check"]      = "Площадь должна быть больше нуля.",
         ["room_types_bed_type_check"]  = "Недопустимый тип кровати.",
@@ -65,19 +74,23 @@ public static class DbErrors
         ["rooms_status_check"]         = "Недопустимый статус номера.",
         ["rates_price_per_night_check"] = "Цена должна быть больше нуля.",
         ["services_price_check"]       = "Цена не может быть отрицательной.",
-        ["seasons_check"]              = "Дата окончания сезона не может быть раньше начала.",
+        ["seasons_dates_check"]        = "Дата окончания сезона не может быть раньше начала.",
         ["hotels_stars_check"]         = "Звёздность — от 1 до 5.",
         ["room_types_capacity_check"]  = "Вместимость должна быть больше нуля.",
 
         // FOREIGN KEY при INSERT/UPDATE: указана несуществующая запись
         ["bookings_guest_id_fkey"]      = "Гость не найден.",
         ["bookings_hotel_id_fkey"]      = "Отель не найден.",
-        ["booking_rooms_room_id_fkey"]  = "Номер не найден.",
+        ["booking_rooms_room_fkey"]     = "Номер и бронь должны относиться к одному отелю.",
+        ["booking_rooms_booking_fkey"]  = "Номер и бронь должны относиться к одному отелю.",
         ["employees_hotel_id_fkey"]     = "Отель не найден.",
         ["employees_position_id_fkey"]  = "Должность не найдена.",
         ["users_employee_id_fkey"]      = "Сотрудник не найден.",
         ["guests_country_id_fkey"]      = "Страна не найдена.",
     };
+
+    // Для теста: все имена ограничений, на которые опирается словарь
+    public static IReadOnlyCollection<string> KnownConstraints => ByConstraint.Keys;
 
     // Как назвать таблицу в сообщении «на запись ссылаются …»
     private static readonly Dictionary<string, string> TableTitles = new()

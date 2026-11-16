@@ -23,7 +23,7 @@ public static class RoomSearch
     public const int MaxGuests = 6;
 
     // Номер r свободен на [@dateFrom, @dateTo): не на ремонте и нет АКТИВНОЙ строки booking_rooms
-    // с пересекающимся периодом. Ровно условие ограничения booking_rooms_room_id_daterange_excl:
+    // с пересекающимся периодом. Ровно условие ограничения booking_rooms_no_overlap:
     //     EXCLUDE USING gist (room_id WITH =, daterange(date_from, date_to, '[)') WITH &&) WHERE (is_active)
     // поэтому «свободен» здесь = «БД позволит вставить». @excludeBookingId — бронь, которую правят (0 — никакая).
     public const string FreeRoomCondition = """

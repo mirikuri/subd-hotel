@@ -101,7 +101,7 @@ public class EditModel : PageModel
             catch (PostgresException ex) when (DbErrors.IsConstraintViolation(ex))
             {
                 ModelState.AddModelError(
-                    ex.ConstraintName is "users_login_key" or "users_login_lower_key" ? nameof(Login) : "",
+                    ex.ConstraintName is "users_login_lower_key" ? nameof(Login) : "",
                     DbErrors.Describe(ex));
             }
         }

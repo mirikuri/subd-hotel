@@ -54,8 +54,8 @@ public sealed class TestHotel : IAsyncDisposable
         await using var conn = await _db.OpenAsync();
         var n = _extraGuests.Count;
         var id = await ScalarIntAsync(conn, """
-            INSERT INTO guests (full_name, document_number, login, birth_date)
-            VALUES (@n, @d, @l, '1990-01-01') RETURNING id
+            INSERT INTO guests (full_name, document_number, login, password_hash, birth_date)
+            VALUES (@n, @d, @l, 'нет-пароля', '1990-01-01') RETURNING id
             """, ("n", "Гость " + Tag), ("d", Tag + "_" + n), ("l", Tag + "_" + n));
         _extraGuests.Add(id);
         return id;
@@ -70,9 +70,9 @@ public sealed class TestHotel : IAsyncDisposable
             VALUES (@g, @h, @f, @t, @s, @src, CASE WHEN @s = 'отменена' THEN 'тест' END) RETURNING id
             """, ("g", guestId ?? GuestId), ("h", HotelId), ("f", from), ("t", to), ("s", status), ("src", source));
         await ExecAsync(conn, """
-            INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to, is_active)
-            VALUES (@b, @r, @f, @t, @s <> 'отменена')
-            """, ("b", bookingId), ("r", roomId), ("f", from), ("t", to), ("s", status));
+            INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to, is_active)
+            VALUES (@b, @r, @h, @f, @t, @s <> 'отменена')
+            """, ("b", bookingId), ("r", roomId), ("h", HotelId), ("f", from), ("t", to), ("s", status));
         return bookingId;
     }
 

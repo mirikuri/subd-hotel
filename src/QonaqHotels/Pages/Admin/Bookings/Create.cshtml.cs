@@ -118,8 +118,8 @@ public class CreateModel : PageModel
                 // Номер берём только из отеля брони и не на ремонте — иначе 0 строк.
                 // Пересечение с другими бронями проверит EXCLUDE-ограничение (ошибка 23P01).
                 await using var rc = new NpgsqlCommand("""
-                    INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to)
-                    SELECT @bid, r.id, @df, @dt
+                    INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to)
+                    SELECT @bid, r.id, r.hotel_id, @df, @dt
                     FROM rooms r
                     WHERE r.id = @rid AND r.hotel_id = @h AND r.status <> @repair
                     """, conn, tx);
