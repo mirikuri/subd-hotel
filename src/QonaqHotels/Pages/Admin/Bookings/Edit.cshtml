@@ -58,8 +58,9 @@
         <select asp-for="Status" class="form-select" id="statusSelect">
             <option value="новая">новая</option>
             <option value="подтверждена">подтверждена</option>
-            <option value="заселён">заселён</option>
-            <option value="завершена">завершена</option>
+            @* ставятся только заселением и выездом (страница «Заселение») *@
+            <option value="заселён" disabled="@(Model.Status != "заселён")">заселён</option>
+            <option value="завершена" disabled="@(Model.Status != "завершена")">завершена</option>
             <option value="отменена">отменена</option>
         </select>
     </div>

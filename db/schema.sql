@@ -302,15 +302,76 @@ CREATE TABLE users (
 -- Логин уникален без учёта регистра — так его ищет LoginService
 CREATE UNIQUE INDEX users_login_lower_key ON users (lower(login));
 
---логи
+-- ── Журнал изменений ─────────────────────────────────────────────────────────
+-- Пишется только триггером audit_row (ниже), приложение в него не вставляет.
 CREATE TABLE audit_log (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id      int REFERENCES users(id) ON DELETE SET NULL,
+    user_id      int REFERENCES users(id) ON DELETE SET NULL,   -- NULL: гость сайта, psql, seed
     action       varchar(20) NOT NULL CHECK (action IN ('INSERT', 'UPDATE', 'DELETE')),
     table_name   varchar(60) NOT NULL,
     record_id    int,
-    changed_at   timestamp NOT NULL DEFAULT now()
+    changed_at   timestamptz NOT NULL DEFAULT now(),
+    old_data     jsonb,   -- UPDATE: прежние значения изменённых столбцов; DELETE: вся строка
+    new_data     jsonb    -- UPDATE: новые значения изменённых столбцов;  INSERT: вся строка
 );
+
+-- Кто меняет: приложение после открытия соединения выполняет
+--     SELECT set_config('app.user_id', '<users.id>', false)        (Data/Db.cs)
+-- Для массовой загрузки журнал отключается на сеанс: SET app.audit = 'off' (db/seed.sql).
+CREATE FUNCTION audit_row() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    -- пароли в журнал не попадают; счётчики входа меняются при каждом входе и журнал только засоряют
+    skip  constant text[] := ARRAY['password_hash', 'failed_attempts', 'locked_until', 'last_login_at'];
+    o     jsonb;
+    n     jsonb;
+    actor int;
+    rec   int;
+BEGIN
+    IF current_setting('app.audit', true) = 'off' THEN
+        RETURN NULL;
+    END IF;
+
+    IF TG_OP <> 'INSERT' THEN o := to_jsonb(OLD) - skip; END IF;
+    IF TG_OP <> 'DELETE' THEN n := to_jsonb(NEW) - skip; END IF;
+    rec := coalesce(n ->> 'id', o ->> 'id')::int;   -- до того, как от UPDATE останутся только изменённые столбцы
+
+    IF TG_OP = 'UPDATE' THEN
+        IF o = n THEN
+            RETURN NULL;                        -- изменились только пропускаемые столбцы
+        END IF;
+        -- оставляем только то, что изменилось
+        SELECT jsonb_object_agg(e.key, o -> e.key), jsonb_object_agg(e.key, e.value)
+        INTO o, n
+        FROM jsonb_each(n) AS e
+        WHERE o -> e.key IS DISTINCT FROM e.value;
+    END IF;
+
+    -- id из настройки сеанса; через подзапрос, чтобы несуществующий id дал NULL, а не ошибку FK
+    SELECT u.id INTO actor
+    FROM users u
+    WHERE u.id = nullif(current_setting('app.user_id', true), '')::int;
+
+    INSERT INTO audit_log (user_id, action, table_name, record_id, old_data, new_data)
+    VALUES (actor, TG_OP, TG_TABLE_NAME, rec, o, n);
+    RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON bookings       FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON booking_rooms  FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON stays          FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON service_orders FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON guests         FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON employees      FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON positions      FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON users          FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON hotels         FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON room_types     FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON rooms          FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON seasons        FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON rates          FOR EACH ROW EXECUTE FUNCTION audit_row();
+CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ON services       FOR EACH ROW EXECUTE FUNCTION audit_row();
 
 
 -- ── Индексы ──────────────────────────────────────────────────────────────────
@@ -343,3 +404,4 @@ CREATE INDEX audit_log_user_id_idx            ON audit_log (user_id);
 -- Список броней в админке сортируется по дате оформления, отчёты и «Мои брони» ищут по заезду
 CREATE INDEX bookings_booking_date_idx        ON bookings (booking_date DESC);
 CREATE INDEX bookings_check_in_plan_idx       ON bookings (check_in_plan);
+CREATE INDEX audit_log_changed_at_idx         ON audit_log (changed_at DESC);

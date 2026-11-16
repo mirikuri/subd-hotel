@@ -97,12 +97,27 @@ public class EditModel : PageModel
             // FOR UPDATE блокирует строку брони до конца транзакции:
             // два одновременных сохранения одной брони выполнятся по очереди, а не вперемешку.
             // Отель берём из БД, а не из скрытого поля формы.
+            string currentStatus;
             await using (var lockCmd = new NpgsqlCommand(
-                "SELECT hotel_id FROM bookings WHERE id = @id FOR UPDATE", conn, tx))
+                "SELECT hotel_id, status FROM bookings WHERE id = @id FOR UPDATE", conn, tx))
             {
                 lockCmd.Parameters.AddWithValue("id", Id);
-                if (await lockCmd.ExecuteScalarAsync() is not int hotelId) return NotFound();
-                HotelId = hotelId;
+                await using var lr = await lockCmd.ExecuteReaderAsync();
+                if (!await lr.ReadAsync()) return NotFound();
+                HotelId       = lr.GetInt32(0);
+                currentStatus = lr.GetString(1);
+            }
+
+            // «заселён» и «завершена» — следствие заселения и выезда (таблица stays), их ставит
+            // только страница «Заселение». Вручную в эти статусы и из них бронь не переводится,
+            // иначе статус разойдётся с фактом проживания.
+            if (Status != currentStatus && (IsStayStatus(Status) || IsStayStatus(currentStatus)))
+            {
+                await tx.RollbackAsync();
+                ModelState.AddModelError(nameof(Status),
+                    "Статусы «заселён» и «завершена» меняются только заселением и выездом на странице «Заселение».");
+                Status = currentStatus;
+                return await RedisplayAsync(conn);
             }
 
             await using (var cmd = new NpgsqlCommand("""
@@ -145,6 +160,9 @@ public class EditModel : PageModel
 
         return RedirectToPage("Index");
     }
+
+    private static bool IsStayStatus(string status) =>
+        status is BookingStatus.CheckedIn or BookingStatus.Completed;
 
     // Приводит booking_rooms к одному активному номеру keepRoomId на даты брони (или ни к одному).
     // false — номер нельзя назначить (чужой отель или ремонт).

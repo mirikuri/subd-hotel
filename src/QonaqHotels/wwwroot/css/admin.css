@@ -582,3 +582,6 @@ thead.table-light th {
     border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
 }
 .report-filter-list label { display: block; font-size: .85rem; white-space: nowrap; padding: .1rem 0; }
+
+/* Журнал изменений: JSON со значениями столбцов */
+.audit-data { font-family: ui-monospace, monospace; font-size: .75rem; word-break: break-word; max-width: 340px; }

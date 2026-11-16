@@ -1,0 +1,37 @@
+@page
+@model QonaqHotels.Pages.Admin.Audit.IndexModel
+@using QonaqHotels.Pages.Admin.Audit
+@{ ViewData["Title"] = "Журнал"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Журнал изменений</h4>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><select name="table" class="form-select form-select-sm"><option value="">Все таблицы</option>
+        @foreach (var t in Model.Tables) { <option value="@t" selected="@(t == Model.Table)">@t</option> }
+    </select></div>
+    <div class="col-auto"><select name="action" class="form-select form-select-sm"><option value="">Все действия</option>
+        @foreach (var a in IndexModel.ActionTitles) { <option value="@a.Key" selected="@(a.Key == Model.Action)">@a.Value</option> }
+    </select></div>
+    <div class="col-auto"><input name="recordId" type="number" value="@Model.RecordId" class="form-control form-control-sm" placeholder="id записи" style="width:110px" /></div>
+    <div class="col-auto"><input name="day" type="date" value="@Model.Day?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm">Показать</button></div>
+</form>
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Когда</th><th>Кто</th><th>Действие</th><th>Таблица</th><th>id</th><th>Было</th><th>Стало</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model.Rows) {
+        <tr>
+            <td class="text-nowrap">@r.At.ToString("dd.MM.yyyy HH:mm:ss")</td>
+            <td>@(r.User ?? "— (сайт или прямой запрос)")</td>
+            <td>@IndexModel.ActionTitles.GetValueOrDefault(r.Action, r.Action)</td>
+            <td>@r.Table</td><td>@r.RecordId</td>
+            <td class="audit-data">@r.OldData</td><td class="audit-data">@r.NewData</td>
+        </tr>
+    }
+    @if (Model.Rows.Count == 0) { <tr><td colspan="7" class="text-muted">Записей нет</td></tr> }
+    </tbody>
+</table>
+<p class="text-muted small">Показаны последние 200 записей по фильтру. Пароли и счётчики входа в журнал не пишутся.</p>

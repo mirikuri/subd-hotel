@@ -1,3 +1,6 @@
+-- Демо-данные загружаются без записи в журнал изменений (см. audit_row в schema.sql)
+SET app.audit = 'off';
+
 -- Демо-данные для Qonaq Hotels. Накатывается после schema.sql скриптом db/reset.sh.
 --
 -- Записи связываются по естественным ключам (название страны, отеля, номер документа),
@@ -331,6 +334,10 @@ WITH plan AS (
            v.status, v.source, v.cancel_reason, v.guests, v.lead
     FROM (VALUES
         -- Qonaq Astana Center
+        -- заезд сегодня — их можно заселить на странице «Заселение»
+        ('N00000019',  'Qonaq Astana Center', '204',   0, 3, 'подтверждена', 'сайт',      NULL,                         2,  6),
+        ('N00000020',  'Qonaq Astana Center', '309',   0, 2, 'новая',        'стойка',    NULL,                         1,  0),
+        ('N00000021',  'Qonaq Almaty Park',   '307',   0, 4, 'подтверждена', 'агрегатор', NULL,                         2, 15),
         ('N00000001',  'Qonaq Astana Center', '201', -30, 4, 'завершена',    'сайт',      NULL,                         1, 14),
         ('4510123456', 'Qonaq Astana Center', '202', -21, 5, 'завершена',    'агрегатор', NULL,                         2, 30),
         ('N00000003',  'Qonaq Astana Center', '304', -14, 3, 'завершена',    'телефон',   NULL,                         1,  5),

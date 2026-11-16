@@ -1,0 +1,77 @@
+@page
+@model QonaqHotels.Pages.Admin.Stays.IndexModel
+@using QonaqHotels.Data
+@{ ViewData["Title"] = "Заселение"; var today = Clock.Today; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Заселение и выезд · @today.ToString("dd.MM.yyyy")</h4>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><select name="hotel" class="form-select form-select-sm" onchange="this.form.submit()">
+        @foreach (var h in Model.Hotels) { <option value="@h.Value" selected="@(h.Value == Model.Hotel?.ToString())">@h.Label</option> }
+    </select></div>
+</form>
+
+@if (Model.Message != null) { <div class="alert alert-success py-2">@Model.Message</div> }
+@if (Model.Error != null)   { <div class="alert alert-danger py-2">@Model.Error</div> }
+
+<h6 class="mt-3">Ожидают заселения <span class="text-muted">(@Model.Arrivals.Count)</span></h6>
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Номер</th><th>Тип</th><th>Гость</th><th>Заезд</th><th>Выезд</th><th>Гостей</th><th>Бронь</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var a in Model.Arrivals) {
+        <tr>
+            <td>@a.Room</td><td>@a.RoomType</td><td>@a.Guest</td>
+            <td>@a.From.ToString("dd.MM.yyyy")@if (a.From < today) { <span class="badge bg-warning text-dark ms-1">опаздывает</span> }</td>
+            <td>@a.To.ToString("dd.MM.yyyy")</td><td>@a.Guests</td>
+            <td><a asp-page="/Admin/Bookings/Edit" asp-route-id="@a.BookingId">№@a.BookingId</a> · @a.Status</td>
+            <td><form method="post" asp-page-handler="CheckIn" asp-route-hotel="@Model.Hotel" class="m-0">
+                <input type="hidden" name="bookingRoomId" value="@a.BookingRoomId" />
+                <button class="btn btn-primary btn-sm">Заселить</button>
+            </form></td>
+        </tr>
+    }
+    @if (Model.Arrivals.Count == 0) { <tr><td colspan="8" class="text-muted">Сегодня заселять некого</td></tr> }
+    </tbody>
+</table>
+
+<h6 class="mt-4">Проживают <span class="text-muted">(@Model.InHouse.Count)</span></h6>
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Номер</th><th>Тип</th><th>Гость</th><th>Заселён</th><th>Выезд по плану</th><th>Оформил</th><th>Бронь</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var s in Model.InHouse) {
+        <tr>
+            <td>@s.Room</td><td>@s.RoomType</td><td>@s.Guest</td>
+            <td>@s.CheckedInAt.ToString("dd.MM.yyyy HH:mm")</td>
+            <td>@s.PlannedOut.ToString("dd.MM.yyyy")
+                @if (s.PlannedOut == today) { <span class="badge bg-info text-dark ms-1">сегодня</span> }
+                else if (s.PlannedOut < today) { <span class="badge bg-danger ms-1">просрочен</span> }</td>
+            <td>@s.Employee</td>
+            <td><a asp-page="/Admin/Bookings/Edit" asp-route-id="@s.BookingId">№@s.BookingId</a></td>
+            <td><form method="post" asp-page-handler="CheckOut" asp-route-hotel="@Model.Hotel" class="m-0">
+                <input type="hidden" name="stayId" value="@s.StayId" />
+                <button class="btn btn-outline-secondary btn-sm">Выселить</button>
+            </form></td>
+        </tr>
+    }
+    @if (Model.InHouse.Count == 0) { <tr><td colspan="8" class="text-muted">В отеле никто не проживает</td></tr> }
+    </tbody>
+</table>
+
+<h6 class="mt-4">На уборке <span class="text-muted">(@Model.Cleaning.Count)</span></h6>
+<table class="table table-bordered table-sm table-hover" style="max-width:520px">
+    <thead class="table-light"><tr><th>Номер</th><th>Тип</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in Model.Cleaning) {
+        <tr>
+            <td>@c.Room</td><td>@c.RoomType</td>
+            <td><form method="post" asp-page-handler="Clean" asp-route-hotel="@Model.Hotel" class="m-0">
+                <input type="hidden" name="roomId" value="@c.RoomId" />
+                <button class="btn btn-outline-secondary btn-sm">Убрано</button>
+            </form></td>
+        </tr>
+    }
+    @if (Model.Cleaning.Count == 0) { <tr><td colspan="3" class="text-muted">Все номера убраны</td></tr> }
+    </tbody>
+</table>

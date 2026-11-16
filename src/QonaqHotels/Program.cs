@@ -25,12 +25,14 @@ builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o
     o.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All));
 
 // Database connection factory
+builder.Services.AddHttpContextAccessor();   // Db берёт из запроса, кто вошёл (для журнала изменений)
 builder.Services.AddScoped<Db>();
 
 // Login services
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<GuestAuthService>();
 builder.Services.AddScoped<SiteBookingService>();
+builder.Services.AddScoped<StayService>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 builder.Services.AddScoped<PasswordHasher<Guest>>();
 
