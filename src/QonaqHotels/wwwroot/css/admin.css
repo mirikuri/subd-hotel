@@ -570,3 +570,15 @@ thead.table-light th {
   box-shadow: 0 2px 6px rgba(200,161,101,.12);
 }
 #chess-sel-label { flex: 1; color: var(--c-dark); }
+
+/* Отчёты: выпадающий список галочек (отели, типы номеров) */
+.report-filter { position: relative; }
+.report-filter > summary { list-style: none; }
+.report-filter > summary::-webkit-details-marker { display: none; }
+.report-filter-list {
+    position: absolute; z-index: 20; top: calc(100% + 4px); left: 0;
+    min-width: 240px; max-height: 300px; overflow-y: auto;
+    padding: .5rem .75rem; background: #fff;
+    border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.report-filter-list label { display: block; font-size: .85rem; white-space: nowrap; padding: .1rem 0; }

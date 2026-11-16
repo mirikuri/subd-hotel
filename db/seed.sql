@@ -393,6 +393,68 @@ JOIN plan p ON p.guest_id = nb.guest_id
            AND p.hotel_id = nb.hotel_id
            AND p.check_in = nb.check_in_plan;
 
+-- История за прошлый год — чтобы отчёты о загрузке (по неделям, месяцам, рейтинг номеров)
+-- было на чём смотреть. Строится без случайных чисел: всё решает hashtext(...) от номера и недели,
+-- поэтому каждый db/reset.sh даёт те же брони (со сдвигом на текущую дату).
+--
+-- Каждому номеру на каждую неделю (пн–вс) положена не больше одной брони: заезд пн–пт,
+-- от 1 ночи, выезд не позже следующего понедельника — брони одного номера не пересекаются
+-- по построению, а EXCLUDE-ограничение booking_rooms это проверяет.
+-- Вероятность брони: дешёвые типы берут чаще, летом и под Новый год спрос выше, в конце зимы ниже,
+-- у каждого номера свой «характер» (±10 п.п.) — отсюда популярные и простаивающие номера.
+-- Последняя неделя истории кончается минимум за 7 недель до сегодня, раньше броней из плана выше.
+WITH slots AS (
+    SELECT r.id AS room_id, r.hotel_id, rt.name AS type_name, rt.capacity, h.stars,
+           (date_trunc('week', CURRENT_DATE)::date - 7 * w) AS monday,
+           (abs(hashtext('p:' || r.id || ':' || w)::bigint) % 100)::int AS dice,
+           (abs(hashtext('o:' || r.id || ':' || w)::bigint) % 1000000)::int AS h1,
+           (abs(hashtext('n:' || r.id || ':' || w)::bigint) % 1000000)::int AS h2,
+           (abs(hashtext('room:' || r.id)::bigint) % 21)::int - 10 AS quirk
+    FROM rooms r
+    JOIN room_types rt ON rt.id = r.room_type_id
+    JOIN hotels h      ON h.id = r.hotel_id
+    CROSS JOIN generate_series(8, 60) AS w
+    WHERE r.status <> 'ремонт'
+),
+plan AS (
+    SELECT s.room_id, s.hotel_id,
+           s.monday + (ARRAY[0, 1, 2, 2, 3, 3, 4])[s.h1 % 7 + 1]                      AS check_in,
+           s.monday + (ARRAY[0, 1, 2, 2, 3, 3, 4])[s.h1 % 7 + 1] + 1
+               + s.h2 % (7 - (ARRAY[0, 1, 2, 2, 3, 3, 4])[s.h1 % 7 + 1])       AS check_out,
+           1 + s.h2 % s.capacity                                                       AS guests,
+           1 + s.h1 % 30                                                               AS lead,
+           (ARRAY['сайт','сайт','сайт','агрегатор','агрегатор','агрегатор','телефон','телефон','стойка'])
+               [s.h2 % 9 + 1]                                                          AS source,
+           s.h1 % 16 = 0                                                               AS cancelled,
+           (SELECT g.id FROM guests g ORDER BY g.id
+            OFFSET (s.h1 + s.h2) % (SELECT count(*) FROM guests) LIMIT 1)              AS guest_id
+    FROM slots s
+    WHERE s.dice < s.quirk
+                 + CASE s.type_name WHEN 'Стандарт' THEN 88 WHEN 'Комфорт'  THEN 82 WHEN 'Полулюкс' THEN 74
+                                    WHEN 'Семейный' THEN 68 WHEN 'Люкс'     THEN 60 ELSE 52 END
+                 + CASE WHEN extract(month FROM s.monday) IN (6, 7, 8) THEN 20
+                        WHEN extract(month FROM s.monday) IN (12, 1)   THEN 10
+                        WHEN extract(month FROM s.monday) IN (2, 3)    THEN -10 ELSE 0 END
+                 + CASE WHEN s.stars = 5 THEN 5 ELSE 0 END
+),
+new_bookings AS (
+    -- Время оформления = 08:00 + room_id минут: пара (заезд, время) однозначно указывает номер,
+    -- по ней ниже бронь находит свою строку плана
+    INSERT INTO bookings (guest_id, hotel_id, booking_date, check_in_plan, check_out_plan,
+                          status, source, cancel_reason)
+    SELECT guest_id, hotel_id, (check_in - lead) + time '08:00' + room_id * interval '1 minute',
+           check_in, check_out,
+           CASE WHEN cancelled THEN 'отменена' ELSE 'завершена' END, source,
+           CASE WHEN cancelled THEN 'Отмена гостем' END
+    FROM plan
+    RETURNING id, booking_date, check_in_plan
+)
+INSERT INTO booking_rooms (booking_id, room_id, date_from, date_to, guests_count, is_active)
+SELECT nb.id, p.room_id, p.check_in, p.check_out, p.guests, NOT p.cancelled
+FROM new_bookings nb
+JOIN plan p ON p.check_in = nb.check_in_plan
+           AND (p.check_in - p.lead) + time '08:00' + p.room_id * interval '1 minute' = nb.booking_date;
+
 -- Фактические заселения: у «завершена» — заезд и выезд, у «заселён» — только заезд.
 -- Оформляет первый работающий администратор ресепшена отеля.
 INSERT INTO stays (booking_room_id, actual_check_in, actual_check_out, employee_id)

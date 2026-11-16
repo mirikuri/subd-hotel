@@ -1,0 +1,96 @@
+@page
+@model QonaqHotels.Pages.Admin.Reports.IndexModel
+@using QonaqHotels.Pages.Admin.Reports
+@{ ViewData["Title"] = "Отчёты"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Отчёт о загрузке</h4>
+</div>
+
+<div class="mb-2 d-flex flex-wrap gap-1">
+    @foreach (var p in Model.Presets) {
+        var active = p.From == Model.From && p.To == Model.To;
+        <a href="@Model.PresetUrl(p.From, p.To)"
+           class="btn btn-sm @(active ? "btn-primary" : "btn-outline-secondary")">@p.Label</a>
+    }
+</div>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label class="form-label small mb-0">С</label>
+        <input type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" required />
+    </div>
+    <div class="col-auto">
+        <label class="form-label small mb-0">По</label>
+        <input type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" required />
+    </div>
+    <div class="col-auto">
+        <details class="report-filter">
+            <summary class="btn btn-outline-secondary btn-sm">
+                Отели: @(Model.Hotels.Length == 0 ? "все" : Model.Hotels.Length.ToString())
+            </summary>
+            <div class="report-filter-list">
+                @foreach (var h in Model.HotelOptions) {
+                    <label><input type="checkbox" name="hotels" value="@h.Value"
+                                  checked="@Model.Hotels.Contains(int.Parse(h.Value))" /> @h.Label</label>
+                }
+            </div>
+        </details>
+    </div>
+    <div class="col-auto">
+        <details class="report-filter">
+            <summary class="btn btn-outline-secondary btn-sm">
+                Типы номеров: @(Model.Types.Length == 0 ? "все" : Model.Types.Length.ToString())
+            </summary>
+            <div class="report-filter-list">
+                @foreach (var t in Model.TypeOptions) {
+                    <label><input type="checkbox" name="types" value="@t.Value"
+                                  checked="@Model.Types.Contains(int.Parse(t.Value))" /> @t.Label</label>
+                }
+            </div>
+        </details>
+    </div>
+    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm">Показать</button></div>
+    <div class="col-auto">
+        <button name="handler" value="Excel" class="btn btn-primary btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i>Скачать Excel
+        </button>
+    </div>
+</form>
+
+@if (Model.Error != null) {
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+@foreach (var t in Model.Preview) {
+    <h6 class="mt-4 mb-1">@t.Title</h6>
+    @if (t.Note != null) { <p class="text-muted small mb-2">@t.Note</p> }
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm table-hover">
+            <thead class="table-light"><tr>
+                @foreach (var c in t.Columns) { <th>@c.Header</th> }
+            </tr></thead>
+            <tbody>
+            @for (var i = 0; i < t.Rows.Count; i++) {
+                var total = t.LastRowIsTotal && i == t.Rows.Count - 1;
+                <tr class="@(total ? "fw-bold" : "")">
+                    @for (var c = 0; c < t.Columns.Count; c++) {
+                        var f = t.Columns[c].Format;
+                        <td class="@(f == Fmt.Text ? "" : "text-end text-nowrap")">@IndexModel.Format(t.Rows[i][c], f)</td>
+                    }
+                </tr>
+            }
+            @if (t.Rows.Count == 0) {
+                <tr><td colspan="@t.Columns.Count" class="text-muted">Нет данных за период</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.Preview.Count > 0) {
+    <p class="text-muted small mt-3">
+        В Excel-файле ещё листы: по типам номеров, по неделям, по дням, будни и выходные,
+        типы по месяцам, полный рейтинг номеров, сезоны, источники и список броней.
+    </p>
+}
