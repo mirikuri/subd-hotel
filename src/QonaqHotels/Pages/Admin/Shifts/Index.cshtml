@@ -1,0 +1,71 @@
+@page
+@model QonaqHotels.Pages.Admin.Shifts.IndexModel
+@using QonaqHotels.Models
+@{
+    ViewData["Title"] = "Смены";
+    var mon = Model.Monday;
+    string Url(DateOnly d) => $"/Admin/Shifts?hotel={Model.Hotel}&week={d:yyyy-MM-dd}";
+    var defaultStart = mon.ToDateTime(new TimeOnly(8, 0));
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Смены · @mon.ToString("dd.MM") – @mon.AddDays(6).ToString("dd.MM.yyyy")</h4>
+    <div>
+        <a href="@Url(mon.AddDays(-7))" class="btn btn-outline-secondary btn-sm">← неделя</a>
+        <a href="/Admin/Shifts?hotel=@Model.Hotel" class="btn btn-outline-secondary btn-sm">Текущая</a>
+        <a href="@Url(mon.AddDays(7))" class="btn btn-outline-secondary btn-sm">неделя →</a>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <input type="hidden" name="week" value="@mon.ToString("yyyy-MM-dd")" />
+    <div class="col-auto"><select name="hotel" class="form-select form-select-sm" onchange="this.form.submit()">
+        @foreach (var h in Model.Hotels) { <option value="@h.Value" selected="@(h.Value == Model.Hotel?.ToString())">@h.Label</option> }
+    </select></div>
+</form>
+
+@if (Model.Error != null) { <div class="alert alert-danger py-2">@Model.Error</div> }
+
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Сотрудник</th><th>Должность</th><th>Начало</th><th>Конец</th><th>Часов</th><th>Оплата</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var s in Model.Rows) {
+        <tr>
+            <td>@s.Employee</td><td>@s.Position</td>
+            <td>@s.Start.ToString("ddd dd.MM HH:mm")</td><td>@s.End.ToString("ddd dd.MM HH:mm")</td>
+            <td>@s.Hours.ToString("0.##")</td>
+            <td>@(s.Pay is { } p ? Money.Usd(p) : "оклад")</td>
+            <td><form method="post" asp-page-handler="Delete" asp-route-hotel="@Model.Hotel" asp-route-week="@mon.ToString("yyyy-MM-dd")" class="m-0">
+                <input type="hidden" name="shiftId" value="@s.Id" />
+                <button class="btn btn-outline-danger btn-sm">Удалить</button>
+            </form></td>
+        </tr>
+    }
+    @if (Model.Rows.Count == 0) { <tr><td colspan="7" class="text-muted">На этой неделе смен нет</td></tr> }
+    </tbody>
+</table>
+
+<form method="post" asp-page-handler="Add" asp-route-hotel="@Model.Hotel" class="row g-2 mb-4 align-items-end">
+    <div class="col-auto"><label class="form-label small mb-0">Сотрудник</label>
+        <select name="employeeId" class="form-select form-select-sm" required>
+            @foreach (var e in Model.Employees) { <option value="@e.Value">@e.Label</option> }
+        </select></div>
+    <div class="col-auto"><label class="form-label small mb-0">Начало</label>
+        <input name="start" type="datetime-local" value="@defaultStart.ToString("yyyy-MM-ddTHH:mm")" class="form-control form-control-sm" required /></div>
+    <div class="col-auto"><label class="form-label small mb-0">Конец</label>
+        <input name="end" type="datetime-local" value="@defaultStart.AddHours(12).ToString("yyyy-MM-ddTHH:mm")" class="form-control form-control-sm" required /></div>
+    <div class="col-auto"><button class="btn btn-primary btn-sm">+ Добавить смену</button></div>
+</form>
+
+<h6>Итог недели</h6>
+<table class="table table-bordered table-sm" style="max-width:720px">
+    <thead class="table-light"><tr><th>Сотрудник</th><th>Должность</th><th>Смен</th><th>Часов</th><th>Оплата</th></tr></thead>
+    <tbody>
+    @foreach (var t in Model.Totals) {
+        <tr><td>@t.Employee</td><td>@t.Position</td><td>@t.Shifts</td><td>@t.Hours.ToString("0.##")</td>
+            <td>@(t.Pay is { } p ? Money.Usd(p) : "оклад")</td></tr>
+    }
+    @if (Model.Totals.Count == 0) { <tr><td colspan="5" class="text-muted">Нет данных</td></tr> }
+    </tbody>
+</table>
+<p class="text-muted small">Оплата = часы × почасовая ставка должности; у должностей с окладом смены на оплату не влияют. Смена не длиннее 24 часов, смены одного сотрудника не пересекаются — это проверяет база.</p>

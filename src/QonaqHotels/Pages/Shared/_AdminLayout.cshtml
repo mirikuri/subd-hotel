@@ -30,6 +30,9 @@
         }
         <a class="sidebar-link" href="/Admin/Catalogs"><i class="bi bi-book me-2"></i>Справочники</a>
         <a class="sidebar-link" href="/Admin/Reports"><i class="bi bi-bar-chart me-2"></i>Отчёты</a>
+        @if (role == "админ" || role == "бухгалтер") {
+        <a class="sidebar-link" href="/Admin/Shifts"><i class="bi bi-clock-history me-2"></i>Смены</a>
+        }
         @if (role == "админ") {
         <a class="sidebar-link" href="/Admin/Employees"><i class="bi bi-person-badge me-2"></i>Сотрудники</a>
         <a class="sidebar-link" href="/Admin/Users"><i class="bi bi-person-gear me-2"></i>Пользователи</a>
