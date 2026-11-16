@@ -24,6 +24,7 @@
         </td>
         <td>@(b.Source ?? "—")</td>
         <td>
+            <a asp-page="Bill" asp-route-id="@b.Id" class="btn btn-outline-secondary btn-sm">Счёт</a>
             <a asp-page="Edit" asp-route-id="@b.Id" class="btn btn-outline-secondary btn-sm">Изменить</a>
             <a asp-page="Delete" asp-route-id="@b.Id" class="btn btn-outline-danger btn-sm">Удалить</a>
         </td>

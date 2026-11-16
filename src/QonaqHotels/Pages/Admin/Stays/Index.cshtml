@@ -48,7 +48,7 @@
                 @if (s.PlannedOut == today) { <span class="badge bg-info text-dark ms-1">сегодня</span> }
                 else if (s.PlannedOut < today) { <span class="badge bg-danger ms-1">просрочен</span> }</td>
             <td>@s.Employee</td>
-            <td><a asp-page="/Admin/Bookings/Edit" asp-route-id="@s.BookingId">№@s.BookingId</a></td>
+            <td><a asp-page="/Admin/Bookings/Edit" asp-route-id="@s.BookingId">№@s.BookingId</a> · <a asp-page="/Admin/Bookings/Bill" asp-route-id="@s.BookingId">счёт и услуги</a></td>
             <td><form method="post" asp-page-handler="CheckOut" asp-route-hotel="@Model.Hotel" class="m-0">
                 <input type="hidden" name="stayId" value="@s.StayId" />
                 <button class="btn btn-outline-secondary btn-sm">Выселить</button>

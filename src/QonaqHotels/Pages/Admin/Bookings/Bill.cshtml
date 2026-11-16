@@ -1,0 +1,75 @@
+@page "{id:int}"
+@model BillModel
+@using QonaqHotels.Models
+@{ ViewData["Title"] = "Счёт брони"; var b = Model.Booking; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><a asp-page="Index" class="text-decoration-none">Брони</a> / Счёт брони №@b.Id</h4>
+    <a asp-page="Edit" asp-route-id="@b.Id" class="btn btn-outline-secondary btn-sm">Изменить бронь</a>
+</div>
+
+<p class="mb-3">
+    <strong>@b.GuestName</strong> · @b.HotelName ·
+    @b.CheckInPlan.ToString("dd.MM.yyyy") – @b.CheckOutPlan.ToString("dd.MM.yyyy") ·
+    статус «@b.Status»
+</p>
+
+@if (Model.Error != null) { <div class="alert alert-danger py-2">@Model.Error</div> }
+
+<h6>Услуги</h6>
+<table class="table table-bordered table-sm table-hover">
+    <thead class="table-light"><tr><th>Услуга</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Заказано</th><th>Оформил</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var o in Model.Orders) {
+        <tr>
+            <td>@o.Service</td>
+            <td>@o.Quantity.ToString("0.##") @o.Unit</td>
+            <td>@Money.Usd(o.Price)</td>
+            <td>@Money.Usd(o.Quantity * o.Price)</td>
+            <td>@o.OrderedAt.ToString("dd.MM.yyyy HH:mm")</td>
+            <td>@(o.Employee ?? "—")</td>
+            <td>
+                @if (Model.CanOrder) {
+                    <form method="post" asp-page-handler="Remove" asp-route-id="@b.Id" class="m-0">
+                        <input type="hidden" name="orderId" value="@o.Id" />
+                        <button class="btn btn-outline-danger btn-sm">Убрать</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    @if (Model.Orders.Count == 0) { <tr><td colspan="7" class="text-muted">Услуги не заказывались</td></tr> }
+    </tbody>
+</table>
+
+@if (Model.CanOrder) {
+    <form method="post" asp-page-handler="Add" asp-route-id="@b.Id" class="row g-2 mb-4">
+        <div class="col-auto"><select name="serviceId" class="form-select form-select-sm" required>
+            @foreach (var s in Model.Services) { <option value="@s.Id">@s.Label</option> }
+        </select></div>
+        <div class="col-auto"><input name="quantity" type="number" value="1" min="0.5" max="1000" step="0.5"
+                                     class="form-control form-control-sm" style="width:90px" required /></div>
+        <div class="col-auto"><button class="btn btn-primary btn-sm">+ Добавить услугу</button></div>
+    </form>
+} else {
+    <p class="text-muted small">Бронь закрыта — услуги больше не меняются.</p>
+}
+
+<h6>Итого</h6>
+<table class="table table-bordered table-sm" style="max-width:480px">
+    <tbody>
+        <tr><td>Проживание, @Model.Nights ноч.</td><td class="text-end">@Money.Usd(Model.RoomTotal)</td></tr>
+        @if (Model.DiscountPercent > 0) {
+            <tr><td>Скидка по карте @Model.LoyaltyLevel, @Model.DiscountPercent% на проживание</td>
+                <td class="text-end">−@Money.Usd(Model.Discount)</td></tr>
+        }
+        <tr><td>Услуги</td><td class="text-end">@Money.Usd(Model.ServicesTotal)</td></tr>
+        <tr class="fw-bold"><td>К оплате</td><td class="text-end">@Money.Usd(Model.Total)</td></tr>
+    </tbody>
+</table>
+@if (Model.Nights == 0) {
+    <p class="text-muted small">У брони нет активного номера, поэтому проживание не считается.</p>
+} else if (Model.NightsPriced < Model.Nights) {
+    <p class="text-danger small">На @(Model.Nights - Model.NightsPriced) ноч. нет тарифа — они в сумму не вошли.</p>
+}
+<p class="text-muted small">Проживание считается по текущим тарифам, цена услуги — на момент заказа.</p>
