@@ -83,6 +83,8 @@ public class SchemaTests
             SELECT conname::text FROM pg_constraint WHERE connamespace = 'public'::regnamespace
             UNION
             SELECT indexname::text FROM pg_indexes WHERE schemaname = 'public'
+            UNION
+            SELECT tgname::text FROM pg_trigger WHERE NOT tgisinternal
             """, conn);
         await using (var r = await cmd.ExecuteReaderAsync())
             while (await r.ReadAsync()) existing.Add(r.GetString(0));

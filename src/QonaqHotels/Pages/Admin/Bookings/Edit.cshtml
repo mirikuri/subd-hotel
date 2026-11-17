@@ -26,9 +26,9 @@
         <span asp-validation-for="CheckOutPlan" class="text-danger small"></span>
     </div>
     <div class="mb-3">
-        <label class="form-label">Номер <span class="text-muted small">(необязательно)</span></label>
+        <label class="form-label">Номер</label>
         <select name="RoomId" id="room-select" class="form-select">
-            <option value="">— не назначен —</option>
+            <option value="">— выберите номер —</option>
             @foreach (var rm in Model.AvailableRooms)
             {
                 if (Model.AssignedRoomId.HasValue && rm.Value == Model.AssignedRoomId.Value.ToString())
@@ -42,6 +42,11 @@
             }
         </select>
         <div class="form-text" id="room-hint"></div>
+    </div>
+    <div class="mb-3">
+        <label asp-for="GuestsCount" class="form-label">Гостей в номере</label>
+        <input asp-for="GuestsCount" type="number" min="1" max="10" class="form-control" style="max-width:120px" />
+        <span asp-validation-for="GuestsCount" class="text-danger small"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Source" class="form-label">Источник</label>

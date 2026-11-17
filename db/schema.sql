@@ -212,6 +212,30 @@ CREATE TABLE booking_rooms (
     ) WHERE (is_active)
 );
 
+-- Гостей в номере не больше, чем вмещает его тип. CHECK не может заглянуть в другую таблицу
+-- (вместимость лежит в room_types), поэтому это триггер. Ошибка оформлена как нарушение
+-- ограничения с именем booking_rooms_capacity_check — приложение ловит её так же, как CHECK.
+CREATE FUNCTION booking_rooms_check_capacity() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    cap smallint;
+BEGIN
+    SELECT rt.capacity INTO cap
+    FROM rooms r JOIN room_types rt ON rt.id = r.room_type_id
+    WHERE r.id = NEW.room_id;
+
+    IF NEW.guests_count > cap THEN
+        RAISE EXCEPTION 'В номере помещается не больше % гостей, указано %', cap, NEW.guests_count
+            USING ERRCODE = 'check_violation', CONSTRAINT = 'booking_rooms_capacity_check';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER booking_rooms_capacity_check
+    BEFORE INSERT OR UPDATE OF room_id, guests_count ON booking_rooms
+    FOR EACH ROW EXECUTE FUNCTION booking_rooms_check_capacity();
+
 -- Фактические заселения
 CREATE TABLE stays (
     id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

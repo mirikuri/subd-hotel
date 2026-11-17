@@ -27,6 +27,7 @@ public class EditModel : PageModel
     [BindProperty] public string? Source { get; set; }
     [BindProperty] public string? CancelReason { get; set; }
     [BindProperty] public int? RoomId { get; set; }
+    [BindProperty] public short GuestsCount { get; set; } = 1;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -37,7 +38,11 @@ public class EditModel : PageModel
                    g.full_name, h.name, b.hotel_id,
                    (SELECT br.room_id FROM booking_rooms br
                     WHERE br.booking_id = b.id AND br.is_active
-                    ORDER BY br.id LIMIT 1) AS room_id
+                    ORDER BY br.id LIMIT 1) AS room_id,
+                   -- у отменённой брони активного номера нет — берём число гостей из последней строки
+                   coalesce((SELECT br.guests_count FROM booking_rooms br
+                             WHERE br.booking_id = b.id
+                             ORDER BY br.is_active DESC, br.id DESC LIMIT 1), 1) AS guests_count
             FROM bookings b
             JOIN guests g ON g.id = b.guest_id
             JOIN hotels h ON h.id = b.hotel_id
@@ -58,6 +63,7 @@ public class EditModel : PageModel
             HotelName      = r.GetString(7);
             HotelId        = r.GetInt32(8);
             AssignedRoomId = r.IsDBNull(9) ? null : r.GetInt32(9);
+            GuestsCount    = r.GetInt16(10);
             RoomId         = AssignedRoomId;
         }
 
@@ -84,6 +90,12 @@ public class EditModel : PageModel
 
         if (Status == BookingStatus.Cancelled && string.IsNullOrWhiteSpace(CancelReason))
             ModelState.AddModelError(nameof(CancelReason), "Укажите причину отмены.");
+
+        // Бронь без номера ничего не резервирует; номер не нужен только отменённой
+        if (Status != BookingStatus.Cancelled && RoomId is null)
+            ModelState.AddModelError(nameof(RoomId), "Выберите номер.");
+        if (GuestsCount < 1)
+            ModelState.AddModelError(nameof(GuestsCount), "Гостей — не меньше одного.");
 
         await using var conn = await _db.OpenAsync();
 
@@ -152,9 +164,7 @@ public class EditModel : PageModel
         catch (PostgresException ex) when (DbErrors.IsConstraintViolation(ex))
         {
             await tx.RollbackAsync();
-            ModelState.AddModelError(
-                ex.SqlState == DbErrors.ExclusionViolation ? nameof(RoomId) : "",
-                DbErrors.Describe(ex));
+            ModelState.AddModelError(CreateModel.ErrorField(ex), DbErrors.Describe(ex));
             return await RedisplayAsync(conn);
         }
 
@@ -183,7 +193,7 @@ public class EditModel : PageModel
 
         // 2. Тот же номер — переносим даты в существующей строке (история не плодится)
         await using (var move = new NpgsqlCommand("""
-            UPDATE booking_rooms SET date_from = @df, date_to = @dt
+            UPDATE booking_rooms SET date_from = @df, date_to = @dt, guests_count = @n
             WHERE booking_id = @id AND is_active AND room_id = @rid
             """, conn, tx))
         {
@@ -191,13 +201,14 @@ public class EditModel : PageModel
             move.Parameters.AddWithValue("rid", keepRoomId.Value);
             move.Parameters.AddWithValue("df",  CheckInPlan);
             move.Parameters.AddWithValue("dt",  CheckOutPlan);
+            move.Parameters.AddWithValue("n",   GuestsCount);
             if (await move.ExecuteNonQueryAsync() > 0) return true;
         }
 
         // 3. Новый номер — только из отеля брони и не на ремонте
         await using var add = new NpgsqlCommand("""
-            INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to)
-            SELECT @id, r.id, r.hotel_id, @df, @dt
+            INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to, guests_count)
+            SELECT @id, r.id, r.hotel_id, @df, @dt, @n
             FROM rooms r
             WHERE r.id = @rid AND r.hotel_id = @h AND r.status <> @repair
             """, conn, tx);
@@ -207,6 +218,7 @@ public class EditModel : PageModel
         add.Parameters.AddWithValue("repair", RoomStatus.Repair);
         add.Parameters.AddWithValue("df",     CheckInPlan);
         add.Parameters.AddWithValue("dt",     CheckOutPlan);
+        add.Parameters.AddWithValue("n",      GuestsCount);
         return await add.ExecuteNonQueryAsync() > 0;
     }
 

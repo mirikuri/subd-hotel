@@ -20,6 +20,7 @@ public class CreateModel : PageModel
     [BindProperty] public DateOnly CheckOutPlan { get; set; } = Clock.Today.AddDays(1);
     [BindProperty] public string? Source { get; set; }
     [BindProperty] public int? RoomId { get; set; }
+    [BindProperty] public short GuestsCount { get; set; } = 1;
 
     public SelectList Guests { get; set; } = null!;
     public SelectList Hotels { get; set; } = null!;
@@ -87,6 +88,12 @@ public class CreateModel : PageModel
         if (CheckInPlan > maxDate || CheckOutPlan > maxDate)
             ModelState.AddModelError("", "Бронирование возможно максимум за год вперёд.");
 
+        // Бронь без номера ничего не резервирует, поэтому номер обязателен
+        if (RoomId is null)
+            ModelState.AddModelError(nameof(RoomId), "Выберите номер.");
+        if (GuestsCount < 1)
+            ModelState.AddModelError(nameof(GuestsCount), "Гостей — не меньше одного.");
+
         await using var conn = await _db.OpenAsync();
 
         if (!ModelState.IsValid)
@@ -116,10 +123,11 @@ public class CreateModel : PageModel
             if (RoomId.HasValue)
             {
                 // Номер берём только из отеля брони и не на ремонте — иначе 0 строк.
-                // Пересечение с другими бронями проверит EXCLUDE-ограничение (ошибка 23P01).
+                // Пересечение с другими бронями проверит EXCLUDE-ограничение (ошибка 23P01),
+                // вместимость номера — триггер booking_rooms_capacity_check.
                 await using var rc = new NpgsqlCommand("""
-                    INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to)
-                    SELECT @bid, r.id, r.hotel_id, @df, @dt
+                    INSERT INTO booking_rooms (booking_id, room_id, hotel_id, date_from, date_to, guests_count)
+                    SELECT @bid, r.id, r.hotel_id, @df, @dt, @n
                     FROM rooms r
                     WHERE r.id = @rid AND r.hotel_id = @h AND r.status <> @repair
                     """, conn, tx);
@@ -129,6 +137,7 @@ public class CreateModel : PageModel
                 rc.Parameters.AddWithValue("repair", RoomStatus.Repair);
                 rc.Parameters.AddWithValue("df",     CheckInPlan);
                 rc.Parameters.AddWithValue("dt",     CheckOutPlan);
+                rc.Parameters.AddWithValue("n",      GuestsCount);
 
                 if (await rc.ExecuteNonQueryAsync() == 0)
                 {
@@ -143,14 +152,18 @@ public class CreateModel : PageModel
         catch (PostgresException ex) when (DbErrors.IsConstraintViolation(ex))
         {
             await tx.RollbackAsync();
-            ModelState.AddModelError(
-                ex.SqlState == DbErrors.ExclusionViolation ? nameof(RoomId) : "",
-                DbErrors.Describe(ex));
+            ModelState.AddModelError(ErrorField(ex), DbErrors.Describe(ex));
             return await RedisplayAsync(conn);
         }
 
         return RedirectToPage("Index");
     }
+
+    // К какому полю формы относится ошибка базы
+    internal static string ErrorField(PostgresException ex) =>
+        ex.SqlState == DbErrors.ExclusionViolation          ? nameof(RoomId)
+        : ex.ConstraintName == "booking_rooms_capacity_check" ? nameof(GuestsCount)
+        : "";
 
     private async Task<IActionResult> RedisplayAsync(NpgsqlConnection conn)
     {

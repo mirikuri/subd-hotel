@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using QonaqHotels.Data;
 
 namespace QonaqHotels.Tests;
 
@@ -31,8 +32,11 @@ public class PagingTests : IClassFixture<AppFactory>
         Assert.DoesNotContain("data-next-page", checkedIn);
         Assert.InRange(Rows(checkedIn), 1, 49);
 
-        var first  = await _client.GetStringAsync("/Admin/Bookings?handler=Search&pageNo=1");
-        var second = await _client.GetStringAsync("/Admin/Bookings?handler=Search&pageNo=2");
+        // только давние брони из seed: другие тесты параллельно создают брони на будущие даты,
+        // и без фильтра новые строки сдвигали бы порции между двумя запросами
+        var old = "&checkinTo=" + Clock.Today.AddDays(-100).ToString("yyyy-MM-dd");
+        var first  = await _client.GetStringAsync("/Admin/Bookings?handler=Search&pageNo=1" + old);
+        var second = await _client.GetStringAsync("/Admin/Bookings?handler=Search&pageNo=2" + old);
         Assert.Contains("data-next-page=\"2\"", first);
         Assert.Contains("data-next-page=\"3\"", second);
 

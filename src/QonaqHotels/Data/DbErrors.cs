@@ -58,6 +58,7 @@ public static class DbErrors
         // CHECK
         ["bookings_dates_check"]         = "Дата выезда должна быть позже даты заезда.",
         ["booking_rooms_dates_check"]    = "Дата выезда должна быть позже даты заезда.",
+        ["booking_rooms_capacity_check"] = "Гостей больше, чем вмещает выбранный номер.",
         ["bookings_cancel_reason_check"] = "Причина отмены указывается у отменённой брони и только у неё.",
         ["positions_role_check"]         = "Недопустимая роль: разрешены админ, ресепшен, бухгалтер.",
         ["guests_account_check"]         = "Логин и пароль гостя задаются только вместе.",
